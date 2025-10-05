@@ -1,28 +1,21 @@
-import express from "express";
+import express from 'express';
 import {
-  runAnalysis,
-  getAnalysisStatus,
-  getAnalysisProgress
-} from "../controllers/analysisController";
+  createAnalysisBatch,
+  startAnalysisBatch,
+  getAnalysisBatchStatus,
+  getProjectAnalysisBatches,
+  cancelAnalysisBatch
+} from '../controllers/analysisController';
 
 const router = express.Router();
 
-/**
- * POST /analysis/run
- * Start Gemini analysis for selected articles
- */
-router.post("/run", runAnalysis);
+// Analysis batch management
+router.post('/batch', createAnalysisBatch);
+router.post('/batch/:batchId/start', startAnalysisBatch);
+router.get('/batch/:batchId', getAnalysisBatchStatus);
+router.post('/batch/:batchId/cancel', cancelAnalysisBatch);
 
-/**
- * GET /analysis/status/:projectId
- * Get analysis status for a project
- */
-router.get("/status/:projectId", getAnalysisStatus);
-
-/**
- * GET /analysis/progress/:projectId
- * Get detailed progress of analysis jobs
- */
-router.get("/progress/:projectId", getAnalysisProgress);
+// Project-specific endpoints
+router.get('/project/:projectId/batches', getProjectAnalysisBatches);
 
 export default router;

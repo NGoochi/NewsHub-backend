@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAvailableCountries = exports.getSearchSources = exports.getProjectStats = exports.cancelSession = exports.getProjectSessions = exports.getSessionStatus = exports.startImport = exports.previewImport = void 0;
+exports.getAvailableLanguages = exports.getAvailableCountries = exports.getSearchSources = exports.getProjectStats = exports.cancelSession = exports.getProjectSessions = exports.getSessionStatus = exports.startImport = exports.previewImport = void 0;
 const importService_1 = require("../lib/importService");
 const validation_1 = require("../utils/validation");
 const importService = new importService_1.ImportService();
@@ -318,3 +318,25 @@ const getAvailableCountries = async (req, res) => {
     }
 };
 exports.getAvailableCountries = getAvailableCountries;
+/**
+ * Get available languages for source filtering
+ * GET /import/languages
+ */
+const getAvailableLanguages = async (req, res) => {
+    try {
+        const languages = await importService.getAvailableLanguages();
+        res.json({
+            success: true,
+            data: languages,
+            error: null
+        });
+    }
+    catch (error) {
+        console.error('Get available languages error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to get available languages'
+        });
+    }
+};
+exports.getAvailableLanguages = getAvailableLanguages;

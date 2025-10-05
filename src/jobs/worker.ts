@@ -79,7 +79,7 @@ export const processBatch = async (batchId?: string): Promise<void> => {
       // Create quotes if any
       if (result.quotes && result.quotes.length > 0) {
         await prisma.quote.createMany({
-          data: result.quotes.map(quote => ({
+          data: result.quotes.map((quote: any) => ({
             articleId: result.id,
             stakeholderNameGemini: quote.stakeholderName,
             stakeholderAffiliationGemini: quote.stakeholderAffiliation,

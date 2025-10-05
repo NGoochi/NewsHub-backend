@@ -3,12 +3,41 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testGeminiConnection = exports.analyzeArticles = void 0;
+exports.testGeminiConnection = exports.extractQuotes = exports.analyzeArticles = void 0;
 const axios_1 = __importDefault(require("axios"));
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
 /**
- * Analyze articles using Gemini API
+ * Load prompt templates from files
+ */
+const loadPromptTemplate = (filename) => {
+    try {
+        const promptPath = path_1.default.join(__dirname, '..', '..', 'docs', 'prompts', filename);
+        return fs_1.default.readFileSync(promptPath, 'utf-8');
+    }
+    catch (error) {
+        console.error(`Failed to load prompt template ${filename}:`, error);
+        throw new Error(`Failed to load prompt template: ${filename}`);
+    }
+};
+/**
+ * Load category definitions
+ */
+const loadCategoryDefinitions = () => {
+    try {
+        const categoryPath = path_1.default.join(__dirname, '..', '..', 'docs', 'prompts', 'category-definitions.md');
+        const content = fs_1.default.readFileSync(categoryPath, 'utf-8');
+        return JSON.parse(content);
+    }
+    catch (error) {
+        console.error('Failed to load category definitions:', error);
+        return [];
+    }
+};
+/**
+ * Analyze articles using Gemini API with article analysis prompt
  * @param articles Array of articles to analyze (max 10)
- * @returns Analysis results with summaries, categories, sentiment, and quotes
+ * @returns Analysis results with summaries, categories, sentiment
  */
 const analyzeArticles = async (articles) => {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -21,43 +50,29 @@ const analyzeArticles = async (articles) => {
     if (articles.length === 0) {
         throw new Error('At least one article is required for analysis');
     }
-    const systemPrompt = `You are a news analysis assistant. Analyze the provided articles and return structured JSON data.
-
-For each article, provide:
-1. A concise summary (2-3 sentences)
-2. A category from: Politics, Business, Technology, Health, Sports, Entertainment, Science, World News
-3. Sentiment: positive, neutral, or negative
-4. Whether the content was translated (true/false)
-5. Key quotes from stakeholders with their name, affiliation, and quote text
-
-Return ONLY valid JSON in this exact format:
-{
-  "articles": [
-    {
-      "id": "article_id",
-      "summary": "Article summary here",
-      "category": "Category Name",
-      "sentiment": "positive|neutral|negative",
-      "translated": false,
-      "quotes": [
-        {
-          "stakeholderName": "Person Name",
-          "stakeholderAffiliation": "Organization/Role",
-          "quote": "Quote text here"
-        }
-      ]
-    }
-  ]
-}`;
+    // Load the article analysis prompt
+    const systemPrompt = loadPromptTemplate('article-analysis.md');
+    // Load category definitions
+    const categories = loadCategoryDefinitions();
+    // Create number range for output
+    const numberRange = `1-${articles.length}`;
     const userPrompt = `Please analyze these articles:
 
-${articles.map(article => `
-Article ID: ${article.id}
-Title: ${article.title}
-Source: ${article.newsOutlet || 'Unknown'}
-Authors: ${article.authors?.join(', ') || 'Unknown'}
-Content: ${article.fullBodyText}
-`).join('\n---\n')}
+Articles JSON:
+${JSON.stringify(articles.map(article => ({
+        id: article.id,
+        title: article.title,
+        source: article.newsOutlet || 'Unknown',
+        author: article.authors?.join(', ') || '',
+        date: new Date().toISOString().split('T')[0], // Current date as placeholder
+        url: '', // Not available in our data
+        text: article.fullBodyText
+    })), null, 2)}
+
+Categories JSON:
+${JSON.stringify(categories, null, 2)}
+
+Number Range: ${numberRange}
 
 Return the analysis in the specified JSON format.`;
     try {
@@ -106,6 +121,87 @@ Return the analysis in the specified JSON format.`;
     }
 };
 exports.analyzeArticles = analyzeArticles;
+/**
+ * Extract quotes from articles using Gemini API with quote analysis prompt
+ * @param articles Array of articles to analyze (max 10)
+ * @returns Quote extraction results
+ */
+const extractQuotes = async (articles) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new Error('GEMINI_API_KEY environment variable is required');
+    }
+    if (articles.length > 10) {
+        throw new Error('Maximum 10 articles can be analyzed per request');
+    }
+    if (articles.length === 0) {
+        throw new Error('At least one article is required for analysis');
+    }
+    // Load the quote analysis prompt
+    const systemPrompt = loadPromptTemplate('quote-analysis.md');
+    // Create number range for output
+    const numberRange = `1-${articles.length}`;
+    const userPrompt = `Please extract quotes from these articles:
+
+Articles JSON:
+${JSON.stringify(articles.map(article => ({
+        id: article.id,
+        title: article.title,
+        source: article.newsOutlet || 'Unknown',
+        author: article.authors?.join(', ') || '',
+        date: new Date().toISOString().split('T')[0], // Current date as placeholder
+        text: article.fullBodyText
+    })), null, 2)}
+
+Number Range: ${numberRange}
+
+Return the quote extraction in the specified JSON format.`;
+    try {
+        const response = await axios_1.default.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            contents: [
+                {
+                    parts: [
+                        {
+                            text: `${systemPrompt}\n\n${userPrompt}`
+                        }
+                    ]
+                }
+            ],
+            generationConfig: {
+                temperature: 0.1,
+                topK: 40,
+                topP: 0.95,
+                maxOutputTokens: 8192,
+            }
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            timeout: 30000 // 30 second timeout
+        });
+        const generatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!generatedText) {
+            throw new Error('No content generated by Gemini');
+        }
+        // Parse the JSON response
+        const analysisResult = JSON.parse(generatedText);
+        // Validate the response structure
+        if (!analysisResult.quotes || !Array.isArray(analysisResult.quotes)) {
+            throw new Error('Invalid response format from Gemini');
+        }
+        return analysisResult;
+    }
+    catch (error) {
+        if (axios_1.default.isAxiosError(error)) {
+            throw new Error(`Gemini API request failed: ${error.response?.data?.error?.message || error.message}`);
+        }
+        if (error instanceof SyntaxError) {
+            throw new Error(`Failed to parse Gemini response as JSON: ${error.message}`);
+        }
+        throw error;
+    }
+};
+exports.extractQuotes = extractQuotes;
 /**
  * Test Gemini API connection
  * @returns True if connection is successful

@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewsHub Analysis Test Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .article-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            padding: 15px;
+            background: white;
+        }
+
+        .article-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e1e5e9;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+        }
+
+        .article-item:hover {
+            background: #e9ecef;
+        }
+
+        .article-checkbox {
+            margin-right: 12px;
+        }
+
+        .article-info {
+            flex: 1;
+        }
+
+        .article-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .article-meta {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .results {
+            margin-top: 20px;
+        }
+
+        .result-item {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .result-header {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-content {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .batch-status {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .batch-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .batch-stat {
+            text-align: center;
+        }
+
+        .batch-stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .batch-stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e1e5e9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 NewsHub Analysis Test</h1>
+            <p>Test Gemini AI analysis for articles and quote extraction</p>
+        </div>
+
+        <div class="content">
+            <!-- API Configuration -->
+            <div class="section">
+                <h2>🔧 API Configuration</h2>
+                <div class="form-group">
+                    <label for="apiBaseUrl">API Base URL:</label>
+                    <input type="text" id="apiBaseUrl" value="http://localhost:8080" placeholder="http://localhost:8080">
+                </div>
+                <div class="form-group">
+                    <label for="projectId">Project:</label>
+                    <select id="projectId" onchange="onProjectChange()">
+                        <option value="">Select a project...</option>
+                    </select>
+                    <div id="projectInfo" class="project-info" style="display: none; margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 4px; border-left: 4px solid #28a745;">
+                        <strong>Selected Project:</strong> <span id="selectedProjectName"></span><br>
+                        <small>ID: <span id="selectedProjectId"></span></small>
+                    </div>
+                </div>
+                <button class="btn" onclick="loadProjects()">Load Projects</button>
+            </div>
+
+            <!-- Article Selection -->
+            <div class="section">
+                <h2>📰 Article Selection</h2>
+                <div class="form-group">
+                    <button class="btn" onclick="loadArticles()">Load Articles</button>
+                    <button class="btn btn-secondary" onclick="selectAllArticles()">Select All</button>
+                    <button class="btn btn-secondary" onclick="deselectAllArticles()">Deselect All</button>
+                </div>
+                <div id="articleList" class="article-list">
+                    <p style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">
+                        Click "Load Articles" to see available articles for analysis
+                    </p>
+                </div>
+                <div id="articleSelectionInfo" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: none;">
+                    <strong>Selected Articles:</strong> <span id="selectedCount">0</span> / <span id="totalCount">0</span>
+                    <br><small style="color: #6c757d;">Maximum 10 articles per analysis batch</small>
+                </div>
+            </div>
+
+            <!-- Analysis Controls -->
+            <div class="section">
+                <h2>🧠 Analysis Controls</h2>
+                <div class="form-group">
+                    <button class="btn btn-success" onclick="startAnalysis()" id="startAnalysisBtn" disabled>
+                        🚀 Start Analysis
+                    </button>
+                    <button class="btn btn-secondary" onclick="loadAnalysisBatches()">
+                        📊 View Analysis History
+                    </button>
+                </div>
+                <div id="analysisStatus" style="display: none;">
+                    <div class="batch-status">
+                        <div class="batch-info">
+                            <div class="batch-stat">
+                                <div class="batch-stat-number" id="batchStatus">-</div>
+                                <div class="batch-stat-label">Status</div>
+                            </div>
+                            <div class="batch-stat">
+                                <div class="batch-stat-number" id="processedCount">0</div>
+                                <div class="batch-stat-label">Processed</div>
+                            </div>
+                            <div class="batch-stat">
+                                <div class="batch-stat-number" id="totalCount">0</div>
+                                <div class="batch-stat-label">Total</div>
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                        <div style="text-align: center; margin-top: 10px;">
+                            <button class="btn btn-danger" onclick="cancelAnalysis()" id="cancelBtn" style="display: none;">
+                                ❌ Cancel Analysis
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Results -->
+            <div class="section">
+                <h2>📊 Analysis Results</h2>
+                <div id="analysisResults">
+                    <p style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">
+                        Start an analysis to see results here
+                    </p>
+                </div>
+            </div>
+
+            <!-- Analysis History -->
+            <div class="section">
+                <h2>📈 Analysis History</h2>
+                <div id="analysisHistory">
+                    <p style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">
+                        Click "View Analysis History" to see past analysis jobs
+                    </p>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <div>Processing...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentBatchId = null;
+        let statusCheckInterval = null;
+
+        // API helper functions
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            const baseUrl = document.getElementById('apiBaseUrl').value;
+            const url = `${baseUrl}${endpoint}`;
+            
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            const response = await fetch(url, options);
+            return await response.json();
+        }
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function showResults(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<pre style="background: #f8f9fa; padding: 15px; border-radius: 6px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        // Project management
+        async function loadProjects() {
+            showLoading();
+            try {
+                const result = await apiCall('/projects');
+                if (result.success) {
+                    const projectSelect = document.getElementById('projectId');
+                    projectSelect.innerHTML = '<option value="">Select a project...</option>';
+                    
+                    result.data.forEach(project => {
+                        const option = document.createElement('option');
+                        option.value = project.id;
+                        option.textContent = `${project.name} (${project.id.substring(0, 8)}...)`;
+                        option.dataset.projectName = project.name;
+                        projectSelect.appendChild(option);
+                    });
+                    
+                    showStatus('analysisResults', `Loaded ${result.data.length} projects`, 'success');
+                } else {
+                    showStatus('analysisResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('analysisResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function onProjectChange() {
+            const projectSelect = document.getElementById('projectId');
+            const projectInfo = document.getElementById('projectInfo');
+            const selectedProjectName = document.getElementById('selectedProjectName');
+            const selectedProjectId = document.getElementById('selectedProjectId');
+            
+            if (projectSelect.value) {
+                const selectedOption = projectSelect.options[projectSelect.selectedIndex];
+                selectedProjectName.textContent = selectedOption.dataset.projectName;
+                selectedProjectId.textContent = projectSelect.value;
+                projectInfo.style.display = 'block';
+            } else {
+                projectInfo.style.display = 'none';
+            }
+        }
+
+        // Article management
+        async function loadArticles() {
+            const projectId = document.getElementById('projectId').value;
+            if (!projectId) {
+                showStatus('analysisResults', 'Please select a project first', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const result = await apiCall(`/articles?projectId=${projectId}`);
+                if (result.success) {
+                    displayArticles(result.data);
+                    showStatus('analysisResults', `Loaded ${result.data.length} articles`, 'success');
+                } else {
+                    showStatus('analysisResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('analysisResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displayArticles(articles) {
+            const articleList = document.getElementById('articleList');
+            const articleSelectionInfo = document.getElementById('articleSelectionInfo');
+            
+            if (articles.length === 0) {
+                articleList.innerHTML = '<p style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">No articles found in this project</p>';
+                articleSelectionInfo.style.display = 'none';
+                return;
+            }
+
+            const articlesHtml = articles.map(article => `
+                <div class="article-item">
+                    <input type="checkbox" class="article-checkbox" value="${article.id}" onchange="updateSelectionInfo()">
+                    <div class="article-info">
+                        <div class="article-title">${article.title}</div>
+                        <div class="article-meta">
+                            ${article.newsOutlet || 'Unknown'} • ${article.authors?.join(', ') || 'Unknown'} • 
+                            ${article.dateWritten ? new Date(article.dateWritten).toLocaleDateString() : 'No date'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            articleList.innerHTML = articlesHtml;
+            articleSelectionInfo.style.display = 'block';
+            updateSelectionInfo();
+        }
+
+        function updateSelectionInfo() {
+            const checkboxes = document.querySelectorAll('.article-checkbox:checked');
+            const totalCheckboxes = document.querySelectorAll('.article-checkbox');
+            
+            document.getElementById('selectedCount').textContent = checkboxes.length;
+            document.getElementById('totalCount').textContent = totalCheckboxes.length;
+            
+            const startBtn = document.getElementById('startAnalysisBtn');
+            if (checkboxes.length > 0 && checkboxes.length <= 10) {
+                startBtn.disabled = false;
+            } else {
+                startBtn.disabled = true;
+            }
+        }
+
+        function selectAllArticles() {
+            const checkboxes = document.querySelectorAll('.article-checkbox');
+            checkboxes.forEach(cb => cb.checked = true);
+            updateSelectionInfo();
+        }
+
+        function deselectAllArticles() {
+            const checkboxes = document.querySelectorAll('.article-checkbox');
+            checkboxes.forEach(cb => cb.checked = false);
+            updateSelectionInfo();
+        }
+
+        // Analysis management
+        async function startAnalysis() {
+            const projectId = document.getElementById('projectId').value;
+            const selectedArticles = Array.from(document.querySelectorAll('.article-checkbox:checked')).map(cb => cb.value);
+            
+            if (!projectId) {
+                showStatus('analysisResults', 'Please select a project first', 'error');
+                return;
+            }
+
+            if (selectedArticles.length === 0) {
+                showStatus('analysisResults', 'Please select at least one article', 'error');
+                return;
+            }
+
+            if (selectedArticles.length > 10) {
+                showStatus('analysisResults', 'Maximum 10 articles allowed per batch', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                // Create analysis batch
+                const batchResult = await apiCall('/analysis/batch', 'POST', {
+                    projectId,
+                    articleIds: selectedArticles
+                });
+
+                if (batchResult.success) {
+                    currentBatchId = batchResult.data.batchId;
+                    
+                    // Start the batch
+                    const startResult = await apiCall(`/analysis/batch/${currentBatchId}/start`, 'POST');
+                    
+                    if (startResult.success) {
+                        showStatus('analysisResults', `Analysis started! Batch ID: ${currentBatchId}`, 'success');
+                        showAnalysisStatus();
+                        startStatusPolling();
+                    } else {
+                        showStatus('analysisResults', `Error starting analysis: ${startResult.error}`, 'error');
+                    }
+                } else {
+                    showStatus('analysisResults', `Error creating batch: ${batchResult.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('analysisResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function showAnalysisStatus() {
+            document.getElementById('analysisStatus').style.display = 'block';
+        }
+
+        function startStatusPolling() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+
+            statusCheckInterval = setInterval(async () => {
+                if (!currentBatchId) return;
+
+                try {
+                    const result = await apiCall(`/analysis/batch/${currentBatchId}`);
+                    if (result.success) {
+                        updateStatusDisplay(result.data);
+                        
+                        if (result.data.status === 'completed' || result.data.status === 'failed' || result.data.status === 'cancelled') {
+                            clearInterval(statusCheckInterval);
+                            statusCheckInterval = null;
+                            
+                            if (result.data.status === 'completed') {
+                                showStatus('analysisResults', 'Analysis completed successfully!', 'success');
+                                loadAnalysisBatches(); // Refresh history
+                            } else if (result.data.status === 'failed') {
+                                showStatus('analysisResults', `Analysis failed: ${result.data.error}`, 'error');
+                            } else {
+                                showStatus('analysisResults', 'Analysis cancelled', 'info');
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Status check error:', error);
+                }
+            }, 2000); // Check every 2 seconds
+        }
+
+        function updateStatusDisplay(data) {
+            document.getElementById('batchStatus').textContent = data.status.toUpperCase();
+            document.getElementById('processedCount').textContent = data.processedArticles || 0;
+            document.getElementById('totalCount').textContent = data.totalArticles || 0;
+            
+            const progress = data.totalArticles > 0 ? (data.processedArticles / data.totalArticles) * 100 : 0;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            
+            const cancelBtn = document.getElementById('cancelBtn');
+            if (data.status === 'running') {
+                cancelBtn.style.display = 'inline-block';
+            } else {
+                cancelBtn.style.display = 'none';
+            }
+        }
+
+        async function cancelAnalysis() {
+            if (!currentBatchId) return;
+
+            try {
+                const result = await apiCall(`/analysis/batch/${currentBatchId}/cancel`, 'POST');
+                if (result.success) {
+                    showStatus('analysisResults', 'Analysis cancelled', 'info');
+                    clearInterval(statusCheckInterval);
+                    statusCheckInterval = null;
+                } else {
+                    showStatus('analysisResults', `Error cancelling analysis: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('analysisResults', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadAnalysisBatches() {
+            const projectId = document.getElementById('projectId').value;
+            if (!projectId) {
+                showStatus('analysisHistory', 'Please select a project first', 'error');
+                return;
+            }
+
+            try {
+                const result = await apiCall(`/analysis/project/${projectId}/batches`);
+                if (result.success) {
+                    displayAnalysisHistory(result.data);
+                } else {
+                    showStatus('analysisHistory', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('analysisHistory', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayAnalysisHistory(batches) {
+            const historyDiv = document.getElementById('analysisHistory');
+            
+            if (batches.length === 0) {
+                historyDiv.innerHTML = '<p style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">No analysis batches found</p>';
+                return;
+            }
+
+            const historyHtml = batches.map(batch => `
+                <div class="result-item">
+                    <div class="result-header">
+                        <span>Batch ${batch.batchId.substring(0, 8)}...</span>
+                        <span style="color: ${getStatusColor(batch.status)}; font-weight: bold;">${batch.status.toUpperCase()}</span>
+                    </div>
+                    <div class="result-content">
+                        <strong>Progress:</strong> ${batch.processedArticles}/${batch.totalArticles} articles<br>
+                        <strong>Created:</strong> ${new Date().toLocaleString()}<br>
+                        ${batch.error ? `<strong>Error:</strong> ${batch.error}<br>` : ''}
+                        ${batch.results ? `<strong>Results:</strong> Analysis completed with ${batch.results.articleAnalysis?.length || 0} articles analyzed and ${batch.results.quoteExtraction?.length || 0} quotes extracted` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            historyDiv.innerHTML = historyHtml;
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'completed': return '#28a745';
+                case 'failed': return '#dc3545';
+                case 'running': return '#007bff';
+                case 'cancelled': return '#6c757d';
+                default: return '#6c757d';
+            }
+        }
+
+        // Auto-load projects on page load
+        window.addEventListener('load', () => {
+            loadProjects();
+        });
+    </script>
+</body>
+</html>

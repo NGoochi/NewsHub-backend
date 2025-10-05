@@ -1,8 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImportService = void 0;
 const importSession_1 = require("./importSession");
-const db_1 = require("./db");
+const db_1 = __importDefault(require("./db"));
 class ImportService {
     constructor() {
         this.sessionManager = new importSession_1.ImportSessionManager();
@@ -15,18 +18,22 @@ class ImportService {
             // Get selected sources
             let sources = [];
             if (request.sourceIds && request.sourceIds.length > 0) {
-                sources = await db_1.db.searchSource.findMany({
+                // sourceIds are actually source URIs from the frontend checkboxes
+                console.log('Preview: Selected source URIs:', request.sourceIds);
+                sources = await db_1.default.searchSource.findMany({
                     where: {
-                        id: { in: request.sourceIds },
+                        sourceUri: { in: request.sourceIds },
                         isActive: true
                     }
                 });
+                console.log('Preview: Found sources in database:', sources.length);
             }
             else {
                 // Get all active sources if none specified
-                sources = await db_1.db.searchSource.findMany({
+                sources = await db_1.default.searchSource.findMany({
                     where: { isActive: true }
                 });
+                console.log('Preview: Using all sources:', sources.length);
             }
             // For preview, we'll do a quick test query to estimate results
             // This is a simplified version - in production you might want to cache this
@@ -53,14 +60,12 @@ class ImportService {
             // Get source URIs for the selected sources
             let sourceUris = [];
             if (request.sourceIds && request.sourceIds.length > 0) {
-                const sources = await db_1.db.searchSource.findMany({
-                    where: {
-                        id: { in: request.sourceIds },
-                        isActive: true
-                    },
-                    select: { sourceUri: true }
-                });
-                sourceUris = sources.map(s => s.sourceUri);
+                // sourceIds are actually source URIs from the frontend checkboxes
+                sourceUris = request.sourceIds;
+                console.log('Selected sources for import:', sourceUris);
+            }
+            else {
+                console.log('No sources selected, will use all available sources');
             }
             // Create import session configuration
             const config = {
@@ -111,7 +116,7 @@ class ImportService {
      * Get available search sources
      */
     async getSearchSources() {
-        return await db_1.db.searchSource.findMany({
+        return await db_1.default.searchSource.findMany({
             where: { isActive: true },
             orderBy: [
                 { country: 'asc' },
@@ -127,7 +132,7 @@ class ImportService {
         if (country) {
             whereClause.country = country;
         }
-        return await db_1.db.searchSource.findMany({
+        return await db_1.default.searchSource.findMany({
             where: whereClause,
             orderBy: [
                 { country: 'asc' },
@@ -139,13 +144,25 @@ class ImportService {
      * Get available countries for source filtering
      */
     async getAvailableCountries() {
-        const countries = await db_1.db.searchSource.findMany({
+        const countries = await db_1.default.searchSource.findMany({
             where: { isActive: true },
             select: { country: true },
             distinct: ['country'],
             orderBy: { country: 'asc' }
         });
-        return countries.map(c => c.country);
+        return countries.map((c) => c.country);
+    }
+    /**
+     * Get available languages for source filtering
+     */
+    async getAvailableLanguages() {
+        const languages = await db_1.default.searchSource.findMany({
+            where: { isActive: true },
+            select: { language: true },
+            distinct: ['language'],
+            orderBy: { language: 'asc' }
+        });
+        return languages.map((l) => l.language);
     }
     /**
      * Estimate article count for preview (simplified version)

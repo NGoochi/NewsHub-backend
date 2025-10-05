@@ -261,7 +261,7 @@ Phase	Description	Status
 1	Express + Prisma base, database migration	✅ Complete
 2	CRUD endpoints for Projects, Articles, Quotes	✅ Complete
 3	NewsAPI integration + article import	✅ Complete
-4	Gemini analysis + batching queue	🔜 Next
+4	Gemini analysis + batching queue	✅ Complete
 5	Google Sheets export	Planned
 6	Settings + editable prompts	Planned
 7	Optional UI frontend (React)	Deferred
@@ -273,6 +273,15 @@ Phase	Description	Status
 - Add a settings dialogue that allows user to add/delete search sources, languages, countries.
 - Develop UI to show articles in realtime as they come in.
 - Clean up boolean search option, make a nice little UI for building a boolean search.
+
+### For Gemini Analysis:
+- **Batch Processing Enhancement**: Send off analysis requests in greater than 10 numbers, but make it so 10 articles can be analyzed at a time, include real-time results as they complete.
+- **Category Management**: Fix categorisation - make sure categories are uploaded to database and can be edited from a settings page.
+
+### Not So Urgent:
+- **Translation Model**: Include a translation model - will need its own prompt, etc. dynamic so offer to translate if article is not English.
+- **Stakeholder Tracking**: Per-project stakeholder tracking.
+- **Report Generation**: Generate a single page report from selected analysed articles, this will be another prompt/formatted call. - ability to download report as a PDF.
 🧩 Coding Style Reference
 
 Functions use camelCase.

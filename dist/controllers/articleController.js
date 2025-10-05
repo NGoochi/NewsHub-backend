@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteArticle = exports.updateArticle = exports.getArticleById = exports.getArticlesByProject = exports.getAllArticles = exports.importArticles = exports.createArticle = void 0;
 const db_1 = __importDefault(require("../lib/db"));
-const newsapi_1 = require("../lib/newsapi");
+// import { importFromNewsAPI } from "../lib/newsapi";
 const validation_1 = require("../utils/validation");
 /**
  * Create a new article manually
@@ -80,55 +80,13 @@ exports.createArticle = createArticle;
 /**
  * Import articles from NewsAPI
  * POST /articles/import
+ * NOTE: This function is deprecated - use /import/start instead
  */
 const importArticles = async (req, res) => {
-    try {
-        const { projectId, query, dateFrom, dateTo, sources } = req.body;
-        if (!projectId || !query) {
-            return res.status(400).json({
-                success: false,
-                error: "Project ID and query are required"
-            });
-        }
-        // Verify project exists
-        const project = await db_1.default.project.findUnique({
-            where: { id: projectId }
-        });
-        if (!project) {
-            return res.status(404).json({
-                success: false,
-                error: "Project not found"
-            });
-        }
-        // Import articles from NewsAPI
-        const articles = await (0, newsapi_1.importFromNewsAPI)({
-            query,
-            dateFrom,
-            dateTo,
-            sources
-        });
-        // Save articles to database
-        const savedArticles = await Promise.all(articles.map(article => db_1.default.article.create({
-            data: {
-                ...article,
-                projectId
-            }
-        })));
-        res.status(201).json({
-            success: true,
-            data: {
-                count: savedArticles.length,
-                articles: savedArticles
-            },
-            error: null
-        });
-    }
-    catch (error) {
-        res.status(500).json({
-            success: false,
-            error: "Failed to import articles"
-        });
-    }
+    res.status(410).json({
+        success: false,
+        error: "This endpoint is deprecated. Please use /import/start instead."
+    });
 };
 exports.importArticles = importArticles;
 /**

@@ -18,4 +18,5 @@ router.get('/project/:projectId/stats', importController_1.getProjectStats);
 // Source management
 router.get('/sources', importController_1.getSearchSources);
 router.get('/countries', importController_1.getAvailableCountries);
+router.get('/languages', importController_1.getAvailableLanguages);
 exports.default = router;

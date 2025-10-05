@@ -38,8 +38,21 @@ const processBatch = async (batchId) => {
         if (articles.length !== articleIds.length) {
             throw new Error('Some articles not found');
         }
+        // Filter articles with valid fullBodyText and transform for Gemini
+        const validArticles = articles
+            .filter(article => article.fullBodyText && article.fullBodyText.trim().length > 0)
+            .map(article => ({
+            id: article.id,
+            title: article.title,
+            fullBodyText: article.fullBodyText,
+            newsOutlet: article.newsOutlet || undefined,
+            authors: article.authors || undefined
+        }));
+        if (validArticles.length === 0) {
+            throw new Error('No articles with valid content found');
+        }
         // Analyze articles with Gemini
-        const analysisResults = await (0, gemini_1.analyzeArticles)(articles);
+        const analysisResults = await (0, gemini_1.analyzeArticles)(validArticles);
         // Update articles with analysis results
         for (const result of analysisResults.articles) {
             await db_1.default.article.update({
@@ -55,7 +68,7 @@ const processBatch = async (batchId) => {
             // Create quotes if any
             if (result.quotes && result.quotes.length > 0) {
                 await db_1.default.quote.createMany({
-                    data: result.quotes.map(quote => ({
+                    data: result.quotes.map((quote) => ({
                         articleId: result.id,
                         stakeholderNameGemini: quote.stakeholderName,
                         stakeholderAffiliationGemini: quote.stakeholderAffiliation,

@@ -97,12 +97,16 @@ class NewsAPIClient {
         }
         // Add sources filter
         if (sources.length > 0) {
+            console.log('NewsAPI: Filtering by sources:', sources);
             const sourceConditions = sources.map(source => ({
                 sourceUri: source
             }));
             query.$query.$and.push({
                 $or: sourceConditions
             });
+        }
+        else {
+            console.log('NewsAPI: No source filtering applied');
         }
         // Add date range
         query.$query.$and.push({

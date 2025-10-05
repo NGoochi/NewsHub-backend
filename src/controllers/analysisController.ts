@@ -1,127 +1,199 @@
-import { Request, Response } from "express";
-import prisma from "../lib/db";
-import { addToQueue, getQueueStatus } from "../jobs/queue";
+import { Request, Response } from 'express';
+import { AnalysisBatchService } from '../lib/analysisBatch';
+import { validateRequiredFields, isValidUUID } from '../utils/validation';
+
+const analysisBatchService = new AnalysisBatchService();
 
 /**
- * Start Gemini analysis for selected articles
- * POST /analysis/run
+ * Create a new analysis batch
+ * POST /analysis/batch
  */
-export const runAnalysis = async (req: Request, res: Response) => {
+export const createAnalysisBatch = async (req: Request, res: Response) => {
   try {
-    const { articleIds, projectId } = req.body;
+    const { projectId, articleIds } = req.body;
 
-    if (!articleIds || !Array.isArray(articleIds) || articleIds.length === 0) {
+    // Validate required fields
+    const validation = validateRequiredFields({ projectId, articleIds }, ['projectId', 'articleIds']);
+    if (!validation.isValid) {
       return res.status(400).json({
         success: false,
-        error: "Article IDs array is required"
+        error: `Missing required fields: ${validation.missingFields.join(', ')}`
       });
     }
 
-    if (!projectId) {
+    // Validate project ID format
+    if (!isValidUUID(projectId)) {
       return res.status(400).json({
         success: false,
-        error: "Project ID is required"
+        error: 'Invalid project ID format'
       });
     }
 
-    // Verify articles exist and belong to the project
-    const articles = await prisma.article.findMany({
-      where: {
-        id: { in: articleIds },
-        projectId
+    // Validate article IDs
+    if (!Array.isArray(articleIds) || articleIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Article IDs must be a non-empty array'
+      });
+    }
+
+    // Validate each article ID
+    for (const articleId of articleIds) {
+      if (!isValidUUID(articleId)) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid article ID format: ${articleId}`
+        });
       }
+    }
+
+    // Limit to 10 articles max
+    if (articleIds.length > 10) {
+      return res.status(400).json({
+        success: false,
+        error: 'Maximum 10 articles allowed per batch'
+      });
+    }
+
+    const result = await analysisBatchService.createBatch({
+      projectId,
+      articleIds
     });
 
-    if (articles.length !== articleIds.length) {
-      return res.status(400).json({
-        success: false,
-        error: "Some articles not found or don't belong to the project"
-      });
-    }
-
-    // Add articles to analysis queue
-    const jobIds = await addToQueue(articleIds, projectId);
-
-    res.status(202).json({
+    res.json({
       success: true,
-      data: {
-        message: "Analysis started",
-        jobIds,
-        articleCount: articleIds.length
-      },
+      data: result,
       error: null
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Create analysis batch error:', error);
     res.status(500).json({
       success: false,
-      error: "Failed to start analysis"
+      error: error.message || 'Failed to create analysis batch'
     });
   }
 };
 
 /**
- * Get analysis status for a project
- * GET /analysis/status/:projectId
+ * Start processing an analysis batch
+ * POST /analysis/batch/:batchId/start
  */
-export const getAnalysisStatus = async (req: Request, res: Response) => {
+export const startAnalysisBatch = async (req: Request, res: Response) => {
   try {
-    const { projectId } = req.params;
+    const { batchId } = req.params;
 
-    const status = await getQueueStatus(projectId);
+    if (!isValidUUID(batchId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid batch ID format'
+      });
+    }
+
+    const result = await analysisBatchService.startBatch(batchId);
 
     res.json({
       success: true,
-      data: status,
+      data: result,
       error: null
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Start analysis batch error:', error);
     res.status(500).json({
       success: false,
-      error: "Failed to get analysis status"
+      error: error.message || 'Failed to start analysis batch'
     });
   }
 };
 
 /**
- * Get detailed progress of analysis jobs
- * GET /analysis/progress/:projectId
+ * Get analysis batch status
+ * GET /analysis/batch/:batchId
  */
-export const getAnalysisProgress = async (req: Request, res: Response) => {
+export const getAnalysisBatchStatus = async (req: Request, res: Response) => {
   try {
-    const { projectId } = req.params;
+    const { batchId } = req.params;
 
-    // Get all articles for the project with their analysis status
-    const articles = await prisma.article.findMany({
-      where: { projectId },
-      select: {
-        id: true,
-        title: true,
-        analysedAt: true,
-        summaryGemini: true,
-        categoryGemini: true,
-        sentimentGemini: true
-      }
-    });
+    if (!isValidUUID(batchId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid batch ID format'
+      });
+    }
 
-    const totalArticles = articles.length;
-    const analysedArticles = articles.filter(article => article.analysedAt !== null).length;
-    const pendingArticles = totalArticles - analysedArticles;
+    const result = await analysisBatchService.getBatchStatus(batchId);
 
     res.json({
       success: true,
-      data: {
-        totalArticles,
-        analysedArticles,
-        pendingArticles,
-        progress: totalArticles > 0 ? (analysedArticles / totalArticles) * 100 : 0,
-        articles
-      },
+      data: result,
       error: null
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Get analysis batch status error:', error);
     res.status(500).json({
       success: false,
-      error: "Failed to get analysis progress"
+      error: error.message || 'Failed to get analysis batch status'
+    });
+  }
+};
+
+/**
+ * Get all analysis batches for a project
+ * GET /analysis/project/:projectId/batches
+ */
+export const getProjectAnalysisBatches = async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+
+    if (!isValidUUID(projectId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid project ID format'
+      });
+    }
+
+    const result = await analysisBatchService.getProjectBatches(projectId);
+
+    res.json({
+      success: true,
+      data: result,
+      error: null
+    });
+  } catch (error: any) {
+    console.error('Get project analysis batches error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get project analysis batches'
+    });
+  }
+};
+
+/**
+ * Cancel an analysis batch
+ * POST /analysis/batch/:batchId/cancel
+ */
+export const cancelAnalysisBatch = async (req: Request, res: Response) => {
+  try {
+    const { batchId } = req.params;
+
+    if (!isValidUUID(batchId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid batch ID format'
+      });
+    }
+
+    const result = await analysisBatchService.cancelBatch(batchId);
+
+    res.json({
+      success: true,
+      data: result,
+      error: null
+    });
+  } catch (error: any) {
+    console.error('Cancel analysis batch error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to cancel analysis batch'
     });
   }
 };
