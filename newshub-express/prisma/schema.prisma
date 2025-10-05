@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InputMethod {
+  newsapi
+  manual
+  csv
+}
+
+enum Sentiment {
+  positive
+  neutral
+  negative
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  articles    Article[]
+}
+
+model Article {
+  id               String     @id @default(uuid())
+  projectId        String
+  project          Project    @relation(fields: [projectId], references: [id])
+  newsOutlet       String?
+  title            String
+  authors          String[]
+  url              String?
+  fullBodyText     String?
+  dateWritten      DateTime?
+  inputMethod      InputMethod @default(newsapi)
+  summaryGemini    String?
+  categoryGemini   String?
+  sentimentGemini  Sentiment?
+  translatedGemini Boolean     @default(false)
+  analysedAt       DateTime?
+  quotes           Quote[]
+}
+
+model Quote {
+  id                          String   @id @default(uuid())
+  articleId                   String
+  article                     Article  @relation(fields: [articleId], references: [id])
+  stakeholderNameGemini        String?
+  stakeholderAffiliationGemini String?
+  quoteGemini                  String?
+}
