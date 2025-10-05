@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewsHub Import Test Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .results {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .results pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .session-item {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .session-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .session-status.running {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .session-status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .session-status.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 NewsHub Import Test</h1>
+            <p>Test the NewsAPI.ai integration and import functionality</p>
+        </div>
+
+        <div class="content">
+            <!-- API Configuration -->
+            <div class="section">
+                <h2>🔧 API Configuration</h2>
+                <div class="form-group">
+                    <label for="apiBaseUrl">API Base URL:</label>
+                    <input type="text" id="apiBaseUrl" value="http://localhost:8080" placeholder="http://localhost:8080">
+                </div>
+                <div class="form-group">
+                    <label for="projectId">Project:</label>
+                    <select id="projectId" onchange="onProjectChange()">
+                        <option value="">Select a project...</option>
+                    </select>
+                    <div id="projectInfo" class="project-info" style="display: none; margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 4px; border-left: 4px solid #28a745;">
+                        <strong>Selected Project:</strong> <span id="selectedProjectName"></span><br>
+                        <small>ID: <span id="selectedProjectId"></span></small>
+                    </div>
+                </div>
+                <button class="btn" onclick="loadProjects()">Load Projects</button>
+            </div>
+
+            <!-- Search Parameters -->
+            <div class="section">
+                <h2>🔍 Search Parameters</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="searchTerms">Search Terms (comma-separated):</label>
+                        <input type="text" id="searchTerms" placeholder="artificial intelligence, machine learning" value="artificial intelligence">
+                    </div>
+                    <div class="form-group">
+                        <label for="language">Language Filter:</label>
+                        <select id="language" onchange="filterSources()">
+                            <option value="">All Languages</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="country">Country Filter:</label>
+                        <select id="country" onchange="filterSources()">
+                            <option value="">All Countries</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dataType">Content Type:</label>
+                        <select id="dataType" onchange="filterSources()">
+                            <option value="">All Types</option>
+                            <option value="news">News</option>
+                            <option value="blog">Blogs</option>
+                            <option value="pr">Press Releases</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="selectedSources">News Sources (filtered by above criteria):</label>
+                    <div id="sourceCheckboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid #e1e5e9; padding: 10px; border-radius: 4px; background: #f8f9fa;">
+                        <p style="color: #6c757d; font-style: italic;">Select filters above to see available sources...</p>
+                    </div>
+                    <small style="color: #6c757d;">Sources are filtered by country, language, and content type. Select specific sources or leave empty to use all matching sources.</small>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="startDate">Start Date:</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="endDate">End Date:</label>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="booleanQuery">Boolean Query (optional):</label>
+                    <textarea id="booleanQuery" rows="2" placeholder="(artificial intelligence OR machine learning) AND (healthcare OR medicine)"></textarea>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="useBooleanQuery">
+                    <label for="useBooleanQuery">Use Boolean Query</label>
+                </div>
+            </div>
+
+
+            <!-- Search Preview -->
+            <div class="section">
+                <h2>🔍 Search Preview</h2>
+                <div class="form-group">
+                    <button class="btn" onclick="previewImport()">Preview Search</button>
+                    <button class="btn btn-success" onclick="startImport()">Start Search</button>
+                </div>
+                <div id="importResults"></div>
+            </div>
+
+            <!-- Session Management -->
+            <div class="section">
+                <h2>📊 Session Management</h2>
+                <p style="color: #6c757d; margin-bottom: 15px;">
+                    <strong>What are sessions?</strong> Each search creates a "session" that tracks the import process. 
+                    You can monitor progress, view statistics, and manage running searches here.
+                </p>
+                <div class="form-group">
+                    <button class="btn" onclick="loadProjectSessions()">Load Project Sessions</button>
+                    <button class="btn btn-secondary" onclick="loadProjectStats()">Load Project Stats</button>
+                </div>
+                <div id="sessionResults"></div>
+            </div>
+
+            <!-- Session Status -->
+            <div class="section">
+                <h2>🔍 Session Status</h2>
+                <p style="color: #6c757d; margin-bottom: 15px;">
+                    <strong>Monitor individual sessions:</strong> Check the status of a specific search session, 
+                    see how many articles were found/imported, and cancel running searches if needed.
+                </p>
+                <div class="form-group">
+                    <label for="sessionId">Session ID:</label>
+                    <input type="text" id="sessionId" placeholder="Enter session UUID">
+                </div>
+                <div class="form-group">
+                    <button class="btn" onclick="getSessionStatus()">Get Status</button>
+                    <button class="btn btn-danger" onclick="cancelSession()">Cancel Session</button>
+                </div>
+                <div id="statusResults"></div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing request...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set default dates
+        const today = new Date();
+        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        document.getElementById('startDate').value = weekAgo.toISOString().split('T')[0];
+
+        // Utility functions
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function showResults(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="results"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+        }
+
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            const baseUrl = document.getElementById('apiBaseUrl').value;
+            const url = `${baseUrl}${endpoint}`;
+            
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(url, options);
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Load projects
+        async function loadProjects() {
+            showLoading();
+            try {
+                const result = await apiCall('/projects');
+                if (result.success) {
+                    const projectSelect = document.getElementById('projectId');
+                    projectSelect.innerHTML = '<option value="">Select a project...</option>';
+                    
+                    result.data.forEach(project => {
+                        const option = document.createElement('option');
+                        option.value = project.id;
+                        option.textContent = `${project.name} (${project.id.substring(0, 8)}...)`;
+                        option.dataset.projectName = project.name;
+                        projectSelect.appendChild(option);
+                    });
+                    
+                    showStatus('importResults', `Loaded ${result.data.length} projects`, 'success');
+                } else {
+                    showStatus('importResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('importResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Handle project selection change
+        function onProjectChange() {
+            const projectSelect = document.getElementById('projectId');
+            const projectInfo = document.getElementById('projectInfo');
+            const selectedProjectName = document.getElementById('selectedProjectName');
+            const selectedProjectId = document.getElementById('selectedProjectId');
+            
+            if (projectSelect.value) {
+                const selectedOption = projectSelect.options[projectSelect.selectedIndex];
+                selectedProjectName.textContent = selectedOption.dataset.projectName;
+                selectedProjectId.textContent = projectSelect.value;
+                projectInfo.style.display = 'block';
+            } else {
+                projectInfo.style.display = 'none';
+            }
+        }
+
+        // Load countries
+        async function loadCountries() {
+            showLoading();
+            try {
+                const result = await apiCall('/import/countries');
+                if (result.success) {
+                    const countrySelect = document.getElementById('country');
+                    countrySelect.innerHTML = '<option value="">All Countries</option>';
+                    result.data.forEach(country => {
+                        const option = document.createElement('option');
+                        option.value = country;
+                        option.textContent = country;
+                        countrySelect.appendChild(option);
+                    });
+                    showStatus('importResults', `Loaded ${result.data.length} countries`, 'success');
+                } else {
+                    showStatus('importResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('importResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Load languages
+        async function loadLanguages() {
+            showLoading();
+            try {
+                const result = await apiCall('/import/languages');
+                if (result.success) {
+                    const languageSelect = document.getElementById('language');
+                    languageSelect.innerHTML = '<option value="">All Languages</option>';
+                    result.data.forEach(language => {
+                        const option = document.createElement('option');
+                        option.value = language;
+                        option.textContent = language;
+                        languageSelect.appendChild(option);
+                    });
+                    showStatus('importResults', `Loaded ${result.data.length} languages`, 'success');
+                } else {
+                    showStatus('importResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('importResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Filter sources dynamically based on selected criteria
+        async function filterSources() {
+            const country = document.getElementById('country').value;
+            const language = document.getElementById('language').value;
+            const dataType = document.getElementById('dataType').value;
+            
+            let endpoint = '/import/sources';
+            const params = [];
+            
+            if (country) params.push(`country=${country}`);
+            if (language) params.push(`language=${language}`);
+            if (dataType) params.push(`dataType=${dataType}`);
+            
+            if (params.length > 0) {
+                endpoint += '?' + params.join('&');
+            }
+            
+            try {
+                const result = await apiCall(endpoint);
+                if (result.success) {
+                    const sourceCheckboxes = document.getElementById('sourceCheckboxes');
+                    
+                    if (result.data.length === 0) {
+                        sourceCheckboxes.innerHTML = '<p style="color: #6c757d; font-style: italic;">No sources match the selected criteria. Try adjusting your filters.</p>';
+                        return;
+                    }
+                    
+                    const sourcesHtml = result.data.map(source => `
+                        <label style="display: block; margin-bottom: 8px; padding: 5px; border-radius: 3px; background: white; border: 1px solid #e1e5e9;">
+                            <input type="checkbox" name="selectedSources" value="${source.sourceUri}" style="margin-right: 8px;">
+                            <strong>${source.title}</strong> (${source.country}, ${source.language})
+                            <br><small style="color: #6c757d;">URI: ${source.sourceUri}</small>
+                        </label>
+                    `).join('');
+                    
+                    sourceCheckboxes.innerHTML = sourcesHtml;
+                } else {
+                    document.getElementById('sourceCheckboxes').innerHTML = '<p style="color: #dc3545;">Error loading sources</p>';
+                }
+            } catch (error) {
+                document.getElementById('sourceCheckboxes').innerHTML = '<p style="color: #dc3545;">Error loading sources</p>';
+            }
+        }
+
+        // Get selected sources for search
+        function getSelectedSources() {
+            const checkboxes = document.querySelectorAll('input[name="selectedSources"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        // Preview import
+        async function previewImport() {
+            showLoading();
+            try {
+                const selectedSources = getSelectedSources();
+                console.log('Frontend: Selected sources:', selectedSources);
+                
+                const data = {
+                    projectId: document.getElementById('projectId').value,
+                    searchTerms: document.getElementById('searchTerms').value.split(',').map(s => s.trim()),
+                    sourceIds: selectedSources, // Use selected sources
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    useBooleanQuery: document.getElementById('useBooleanQuery').checked,
+                    booleanQuery: document.getElementById('booleanQuery').value
+                };
+
+                console.log('Frontend: Sending data:', data);
+
+                if (!data.projectId) {
+                    showStatus('importResults', 'Please select a project', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                const result = await apiCall('/import/preview', 'POST', data);
+                if (result.success) {
+                    showResults('importResults', result.data);
+                } else {
+                    showStatus('importResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('importResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Start import
+        async function startImport() {
+            showLoading();
+            try {
+                const selectedSources = getSelectedSources();
+                const data = {
+                    projectId: document.getElementById('projectId').value,
+                    searchTerms: document.getElementById('searchTerms').value.split(',').map(s => s.trim()),
+                    sourceIds: selectedSources, // Use selected sources
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    useBooleanQuery: document.getElementById('useBooleanQuery').checked,
+                    booleanQuery: document.getElementById('booleanQuery').value
+                };
+
+                if (!data.projectId) {
+                    showStatus('importResults', 'Please select a project', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                const result = await apiCall('/import/start', 'POST', data);
+                if (result.success) {
+                    showResults('importResults', result.data);
+                    document.getElementById('sessionId').value = result.data.sessionId;
+                } else {
+                    showStatus('importResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('importResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Load project sessions
+        async function loadProjectSessions() {
+            showLoading();
+            try {
+                const projectId = document.getElementById('projectId').value;
+                if (!projectId) {
+                    showStatus('sessionResults', 'Please enter a Project ID', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                const result = await apiCall(`/import/project/${projectId}/sessions`);
+                if (result.success) {
+                    const sessionsHtml = result.data.map(session => `
+                        <div class="session-item">
+                            <div class="session-status ${session.status}">${session.status}</div>
+                            <strong>Session: ${session.id}</strong>
+                            <br>Found: ${session.articlesFound} | Imported: ${session.articlesImported}
+                            <br><small>Created: ${new Date(session.createdAt).toLocaleString()}</small>
+                        </div>
+                    `).join('');
+                    document.getElementById('sessionResults').innerHTML = sessionsHtml;
+                } else {
+                    showStatus('sessionResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('sessionResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Load project stats
+        async function loadProjectStats() {
+            showLoading();
+            try {
+                const projectId = document.getElementById('projectId').value;
+                if (!projectId) {
+                    showStatus('sessionResults', 'Please enter a Project ID', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                const result = await apiCall(`/import/project/${projectId}/stats`);
+                if (result.success) {
+                    const statsHtml = `
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.totalSessions}</div>
+                                <div class="stat-label">Total Sessions</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.completedSessions}</div>
+                                <div class="stat-label">Completed</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.totalArticlesFound}</div>
+                                <div class="stat-label">Articles Found</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.totalArticlesImported}</div>
+                                <div class="stat-label">Articles Imported</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.successRate.toFixed(1)}%</div>
+                                <div class="stat-label">Success Rate</div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('sessionResults').innerHTML = statsHtml;
+                } else {
+                    showStatus('sessionResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('sessionResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Get session status
+        async function getSessionStatus() {
+            showLoading();
+            try {
+                const sessionId = document.getElementById('sessionId').value;
+                if (!sessionId) {
+                    showStatus('statusResults', 'Please enter a Session ID', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                const result = await apiCall(`/import/session/${sessionId}`);
+                if (result.success) {
+                    showResults('statusResults', result.data);
+                } else {
+                    showStatus('statusResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('statusResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Cancel session
+        async function cancelSession() {
+            showLoading();
+            try {
+                const sessionId = document.getElementById('sessionId').value;
+                if (!sessionId) {
+                    showStatus('statusResults', 'Please enter a Session ID', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                const result = await apiCall(`/import/session/${sessionId}/cancel`, 'POST');
+                if (result.success) {
+                    showStatus('statusResults', 'Session cancelled successfully', 'success');
+                } else {
+                    showStatus('statusResults', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('statusResults', `Error: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Auto-load projects and filters on page load
+        window.addEventListener('load', () => {
+            loadProjects();
+            loadCountries();
+            loadLanguages();
+        });
+    </script>
+</body>
+</html>

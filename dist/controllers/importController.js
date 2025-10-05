@@ -1,0 +1,320 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getAvailableCountries = exports.getSearchSources = exports.getProjectStats = exports.cancelSession = exports.getProjectSessions = exports.getSessionStatus = exports.startImport = exports.previewImport = void 0;
+const importService_1 = require("../lib/importService");
+const validation_1 = require("../utils/validation");
+const importService = new importService_1.ImportService();
+/**
+ * Preview an import before executing
+ * POST /import/preview
+ */
+const previewImport = async (req, res) => {
+    try {
+        const { projectId, searchTerms, sourceIds, startDate, endDate, useBooleanQuery, booleanQuery } = req.body;
+        // Validate required fields
+        const validation = (0, validation_1.validateRequiredFields)(req.body, [
+            'projectId', 'searchTerms', 'startDate', 'endDate'
+        ]);
+        if (!validation.isValid) {
+            return res.status(400).json({
+                success: false,
+                error: `Missing required fields: ${validation.missingFields.join(', ')}`
+            });
+        }
+        // Validate project ID format
+        if (!(0, validation_1.isValidUUID)(projectId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid project ID format'
+            });
+        }
+        // Validate search terms
+        if (!Array.isArray(searchTerms) || searchTerms.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Search terms must be a non-empty array'
+            });
+        }
+        // Validate dates
+        const startDateObj = new Date(startDate);
+        const endDateObj = new Date(endDate);
+        if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid date format'
+            });
+        }
+        if (startDateObj >= endDateObj) {
+            return res.status(400).json({
+                success: false,
+                error: 'Start date must be before end date'
+            });
+        }
+        // Validate boolean query if provided
+        if (useBooleanQuery && (!booleanQuery || booleanQuery.trim().length === 0)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Boolean query is required when useBooleanQuery is true'
+            });
+        }
+        // Create import request
+        const importRequest = {
+            projectId,
+            searchTerms,
+            sourceIds: sourceIds || [],
+            startDate,
+            endDate,
+            useBooleanQuery: useBooleanQuery || false,
+            booleanQuery: booleanQuery || undefined
+        };
+        // Validate the request
+        const requestValidation = importService.validateImportRequest(importRequest);
+        if (!requestValidation.isValid) {
+            return res.status(400).json({
+                success: false,
+                error: `Validation failed: ${requestValidation.errors.join(', ')}`
+            });
+        }
+        // Get preview
+        const preview = await importService.previewImport(importRequest);
+        res.json({
+            success: true,
+            data: preview,
+            error: null
+        });
+    }
+    catch (error) {
+        console.error('Preview import error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to preview import'
+        });
+    }
+};
+exports.previewImport = previewImport;
+/**
+ * Start an import session
+ * POST /import/start
+ */
+const startImport = async (req, res) => {
+    try {
+        const { projectId, searchTerms, sourceIds, startDate, endDate, useBooleanQuery, booleanQuery } = req.body;
+        // Validate required fields
+        const validation = (0, validation_1.validateRequiredFields)(req.body, [
+            'projectId', 'searchTerms', 'startDate', 'endDate'
+        ]);
+        if (!validation.isValid) {
+            return res.status(400).json({
+                success: false,
+                error: `Missing required fields: ${validation.missingFields.join(', ')}`
+            });
+        }
+        // Validate project ID format
+        if (!(0, validation_1.isValidUUID)(projectId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid project ID format'
+            });
+        }
+        // Create import request
+        const importRequest = {
+            projectId,
+            searchTerms,
+            sourceIds: sourceIds || [],
+            startDate,
+            endDate,
+            useBooleanQuery: useBooleanQuery || false,
+            booleanQuery: booleanQuery || undefined
+        };
+        // Validate the request
+        const requestValidation = importService.validateImportRequest(importRequest);
+        if (!requestValidation.isValid) {
+            return res.status(400).json({
+                success: false,
+                error: `Validation failed: ${requestValidation.errors.join(', ')}`
+            });
+        }
+        // Start import
+        const result = await importService.startImport(importRequest);
+        res.json({
+            success: true,
+            data: result,
+            error: null
+        });
+    }
+    catch (error) {
+        console.error('Start import error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to start import'
+        });
+    }
+};
+exports.startImport = startImport;
+/**
+ * Get import session status
+ * GET /import/session/:sessionId
+ */
+const getSessionStatus = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        if (!(0, validation_1.isValidUUID)(sessionId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid session ID format'
+            });
+        }
+        const session = await importService.getSessionStatus(sessionId);
+        res.json({
+            success: true,
+            data: session,
+            error: null
+        });
+    }
+    catch (error) {
+        console.error('Get session status error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to get session status'
+        });
+    }
+};
+exports.getSessionStatus = getSessionStatus;
+/**
+ * Get all import sessions for a project
+ * GET /import/project/:projectId/sessions
+ */
+const getProjectSessions = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        if (!(0, validation_1.isValidUUID)(projectId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid project ID format'
+            });
+        }
+        const sessions = await importService.getProjectSessions(projectId);
+        res.json({
+            success: true,
+            data: sessions,
+            error: null
+        });
+    }
+    catch (error) {
+        console.error('Get project sessions error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to get project sessions'
+        });
+    }
+};
+exports.getProjectSessions = getProjectSessions;
+/**
+ * Cancel a running import session
+ * POST /import/session/:sessionId/cancel
+ */
+const cancelSession = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        if (!(0, validation_1.isValidUUID)(sessionId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid session ID format'
+            });
+        }
+        await importService.cancelSession(sessionId);
+        res.json({
+            success: true,
+            data: { message: 'Session cancelled successfully' },
+            error: null
+        });
+    }
+    catch (error) {
+        console.error('Cancel session error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to cancel session'
+        });
+    }
+};
+exports.cancelSession = cancelSession;
+/**
+ * Get import statistics for a project
+ * GET /import/project/:projectId/stats
+ */
+const getProjectStats = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        if (!(0, validation_1.isValidUUID)(projectId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid project ID format'
+            });
+        }
+        const stats = await importService.getProjectStats(projectId);
+        res.json({
+            success: true,
+            data: stats,
+            error: null
+        });
+    }
+    catch (error) {
+        console.error('Get project stats error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to get project statistics'
+        });
+    }
+};
+exports.getProjectStats = getProjectStats;
+/**
+ * Get available search sources
+ * GET /import/sources
+ */
+const getSearchSources = async (req, res) => {
+    try {
+        const { country } = req.query;
+        let sources;
+        if (country && typeof country === 'string') {
+            sources = await importService.getSearchSourcesByCountry(country);
+        }
+        else {
+            sources = await importService.getSearchSources();
+        }
+        res.json({
+            success: true,
+            data: sources,
+            error: null
+        });
+    }
+    catch (error) {
+        console.error('Get search sources error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to get search sources'
+        });
+    }
+};
+exports.getSearchSources = getSearchSources;
+/**
+ * Get available countries for source filtering
+ * GET /import/countries
+ */
+const getAvailableCountries = async (req, res) => {
+    try {
+        const countries = await importService.getAvailableCountries();
+        res.json({
+            success: true,
+            data: countries,
+            error: null
+        });
+    }
+    catch (error) {
+        console.error('Get available countries error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to get available countries'
+        });
+    }
+};
+exports.getAvailableCountries = getAvailableCountries;

@@ -17,9 +17,12 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.6.2",
+    "axios": "^1.6.0",
     "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "googleapis": "^128.0.0",
     "prisma": "^6.16.3"
   },
   "devDependencies": {

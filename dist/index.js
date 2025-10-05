@@ -6,24 +6,51 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const client_1 = require("@prisma/client");
+const errorHandler_1 = require("./utils/errorHandler");
+// Import route modules
+const projects_1 = __importDefault(require("./routes/projects"));
+const articles_1 = __importDefault(require("./routes/articles"));
+const quotes_1 = __importDefault(require("./routes/quotes"));
+const analysis_1 = __importDefault(require("./routes/analysis"));
+const settings_1 = __importDefault(require("./routes/settings"));
+const export_1 = __importDefault(require("./routes/export"));
+const import_1 = __importDefault(require("./routes/import"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-const prisma = new client_1.PrismaClient();
 const PORT = process.env.PORT || 8080;
+// Middleware
 app.use((0, cors_1.default)());
-app.use(express_1.default.json());
-// Basic health check
-app.get("/", (_, res) => res.send("NewsHub API running!"));
-// Example: list all projects
-app.get("/projects", async (_, res) => {
-    const projects = await prisma.project.findMany({ include: { articles: true } });
-    res.json(projects);
+app.use(express_1.default.json({ limit: '10mb' }));
+app.use(express_1.default.urlencoded({ extended: true }));
+// Serve static files
+app.use(express_1.default.static('public'));
+// Health check endpoint
+app.get("/", (_, res) => {
+    res.json({
+        success: true,
+        data: {
+            message: "NewsHub API running!",
+            version: "1.0.0",
+            timestamp: new Date().toISOString()
+        },
+        error: null
+    });
 });
-// Example: create a project
-app.post("/projects", async (req, res) => {
-    const { name, description } = req.body;
-    const project = await prisma.project.create({ data: { name, description } });
-    res.json(project);
+// API routes
+app.use("/projects", projects_1.default);
+app.use("/articles", articles_1.default);
+app.use("/quotes", quotes_1.default);
+app.use("/analysis", analysis_1.default);
+app.use("/settings", settings_1.default);
+app.use("/export", export_1.default);
+app.use("/import", import_1.default);
+// 404 handler
+app.use(errorHandler_1.notFoundHandler);
+// Global error handler
+app.use(errorHandler_1.globalErrorHandler);
+// Start server
+app.listen(PORT, () => {
+    console.log(`✅ NewsHub API server running on port ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/`);
+    console.log(`📚 API Documentation: Check routes in src/routes/`);
 });
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

@@ -20,12 +20,13 @@ enum Sentiment {
 }
 
 model Project {
-  id          String    @id @default(uuid())
-  name        String
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  articles    Article[]
+  id              String    @id @default(uuid())
+  name            String
+  description     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  articles        Article[]
+  importSessions  ImportSession[]
 }
 
 model Article {
@@ -45,6 +46,16 @@ model Article {
   translatedGemini Boolean     @default(false)
   analysedAt       DateTime?
   quotes           Quote[]
+  
+  // NewsAPI.ai specific fields
+  sourceUri        String?     // NewsAPI.ai source identifier
+  concepts         Json?       // Store AI-extracted concepts
+  categories       Json?       // Store article categories  
+  sentiment        Float?      // Sentiment score from NewsAPI.ai
+  imageUrl         String?     // Article image URL
+  location         Json?       // Geographic data
+  importSessionId  String?     // Link to import session
+  importSession    ImportSession? @relation(fields: [importSessionId], references: [id])
 }
 
 model Quote {
@@ -54,4 +65,44 @@ model Quote {
   stakeholderNameGemini        String?
   stakeholderAffiliationGemini String?
   quoteGemini                  String?
+}
+
+model AnalysisJob {
+  id          String    @id @default(uuid())
+  articleId   String
+  projectId   String
+  status      String    @default("queued") // queued, processing, completed, failed
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  error       String?
+  batchId     String?
+}
+
+model SearchSource {
+  id          String   @id @default(uuid())
+  title       String
+  region      String
+  country     String
+  language    String
+  sourceUri   String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ImportSession {
+  id              String   @id @default(uuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id])
+  searchTerms     String[]
+  sources         String[]
+  startDate       DateTime
+  endDate         DateTime
+  articlesFound   Int
+  articlesImported Int
+  status          String   // 'running', 'completed', 'failed'
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+  articles        Article[]
 }
