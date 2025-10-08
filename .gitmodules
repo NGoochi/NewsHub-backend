@@ -1,0 +1,3 @@
+[submodule "NewsHub-docs"]
+	path = NewsHub-docs
+	url = https://github.com/NGoochi/NewsHub-docs
