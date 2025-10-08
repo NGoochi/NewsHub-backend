@@ -106,6 +106,7 @@ export interface NewsAPIRequest {
 export class NewsAPIClient {
   private apiUrl = NEWSAPI_BASE_URL;
   private articlesPerPage: number;
+  private maxTotalArticles: number;
   private requestDelayMs: number;
   private maxRetries: number;
   private timeoutMs: number;
@@ -113,6 +114,7 @@ export class NewsAPIClient {
   constructor() {
     // Configuration from environment variables
     this.articlesPerPage = parseInt(process.env.NEWSAPI_ARTICLES_PER_PAGE || '100');
+    this.maxTotalArticles = parseInt(process.env.NEWSAPI_MAX_TOTAL_ARTICLES || '100');
     this.requestDelayMs = parseInt(process.env.NEWSAPI_REQUEST_DELAY_MS || '1000');
     this.maxRetries = parseInt(process.env.NEWSAPI_MAX_RETRIES || '3');
     this.timeoutMs = parseInt(process.env.NEWSAPI_TIMEOUT_MS || '30000');
@@ -120,11 +122,14 @@ export class NewsAPIClient {
 
   /**
    * Fetch articles from NewsAPI.ai with pagination
+   * Limited to maxTotalArticles (default 100) per search
    */
   async fetchArticles(requestBody: NewsAPIRequest): Promise<NewsAPIArticle[]> {
     const allArticles: NewsAPIArticle[] = [];
     let currentPage = 1;
     let hasMorePages = true;
+
+    console.log(`Maximum total articles limit: ${this.maxTotalArticles}`);
 
     while (hasMorePages) {
       const request = {
@@ -152,19 +157,30 @@ export class NewsAPIClient {
         console.log(`Fetched ${articles.length} articles from page ${currentPage}`);
         console.log(`Total articles so far: ${allArticles.length}`);
 
-        // Check if there are more pages
-        hasMorePages = articles.length === this.articlesPerPage && 
-                      allArticles.length < (data.articles?.totalResults || 0);
-
-        if (hasMorePages) {
+        // Check if we've reached the maximum total articles limit
+        if (allArticles.length >= this.maxTotalArticles) {
+          console.log(`Reached maximum article limit of ${this.maxTotalArticles}`);
+          hasMorePages = false;
+        }
+        // Check if there are more pages available
+        else if (articles.length === this.articlesPerPage && 
+                 allArticles.length < (data.articles?.totalResults || 0)) {
           currentPage++;
           // Small delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, this.requestDelayMs));
+        } else {
+          hasMorePages = false;
         }
       } catch (error: any) {
         console.error(`Error fetching page ${currentPage}:`, error);
         throw error;
       }
+    }
+
+    // Trim to exactly maxTotalArticles if we exceeded the limit
+    if (allArticles.length > this.maxTotalArticles) {
+      console.log(`Trimming from ${allArticles.length} to ${this.maxTotalArticles} articles`);
+      return allArticles.slice(0, this.maxTotalArticles);
     }
 
     return allArticles;

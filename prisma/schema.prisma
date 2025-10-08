@@ -122,3 +122,30 @@ model ImportSession {
   completedAt     DateTime?
   articles        Article[]
 }
+
+model PromptTemplate {
+  id          String   @id @default(uuid())
+  type        String   // "article-analysis" | "quote-analysis"
+  content     String   @db.Text
+  version     Int      @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?  // Future: user ID
+  description String?  // Optional notes about this version
+  
+  @@index([type, isActive])
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  definition  String   @db.Text
+  keywords    String[] // Array of keyword strings
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0) // For custom ordering in UI
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([isActive, sortOrder])
+}

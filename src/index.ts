@@ -11,6 +11,7 @@ import analysisRouter from "./routes/analysis";
 import settingsRouter from "./routes/settings";
 import exportRouter from "./routes/export";
 import importRouter from "./routes/import";
+import categoriesRouter from "./routes/categories";
 
 dotenv.config();
 const app = express();
@@ -45,6 +46,7 @@ app.use("/analysis", analysisRouter);
 app.use("/settings", settingsRouter);
 app.use("/export", exportRouter);
 app.use("/import", importRouter);
+app.use("/categories", categoriesRouter);
 
 // 404 handler
 app.use(notFoundHandler);

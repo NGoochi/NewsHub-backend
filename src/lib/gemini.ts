@@ -1,6 +1,5 @@
 import axios from 'axios';
-import fs from 'fs';
-import path from 'path';
+import db from './db';
 
 interface GeminiAnalysisRequest {
   articles: Array<{
@@ -27,32 +26,68 @@ interface GeminiAnalysisResponse {
   }>;
 }
 
-/**
- * Load prompt templates from files
- */
-const loadPromptTemplate = (filename: string): string => {
-  try {
-    const promptPath = path.join(__dirname, '..', '..', 'docs', 'prompts', filename);
-    return fs.readFileSync(promptPath, 'utf-8');
-  } catch (error) {
-    console.error(`Failed to load prompt template ${filename}:`, error);
-    throw new Error(`Failed to load prompt template: ${filename}`);
-  }
-};
+// Cache configuration
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const promptCache = new Map<string, { content: string, timestamp: number }>();
+let categoryCache: { data: any[], timestamp: number } | null = null;
 
 /**
- * Load category definitions
+ * Clear all caches (called when categories are updated)
  */
-const loadCategoryDefinitions = (): any[] => {
-  try {
-    const categoryPath = path.join(__dirname, '..', '..', 'docs', 'prompts', 'category-definitions.md');
-    const content = fs.readFileSync(categoryPath, 'utf-8');
-    return JSON.parse(content);
-  } catch (error) {
-    console.error('Failed to load category definitions:', error);
-    return [];
+export function clearPromptCache() {
+  promptCache.clear();
+  categoryCache = null;
+  console.log('✨ Prompt and category cache cleared');
+}
+
+/**
+ * Load prompt template from database with caching
+ */
+async function loadPromptTemplate(type: 'article-analysis' | 'quote-analysis'): Promise<string> {
+  const cached = promptCache.get(type);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log(`📦 Using cached prompt: ${type}`);
+    return cached.content;
   }
-};
+  
+  console.log(`🔄 Loading prompt from database: ${type}`);
+  const prompt = await db.promptTemplate.findFirst({
+    where: { type, isActive: true },
+    orderBy: { version: 'desc' }
+  });
+  
+  if (!prompt) {
+    throw new Error(`Active prompt template not found: ${type}`);
+  }
+  
+  promptCache.set(type, { content: prompt.content, timestamp: Date.now() });
+  return prompt.content;
+}
+
+/**
+ * Load category definitions from database with caching
+ */
+async function loadCategoryDefinitions(): Promise<any[]> {
+  if (categoryCache && Date.now() - categoryCache.timestamp < CACHE_TTL) {
+    console.log('📦 Using cached categories');
+    return categoryCache.data;
+  }
+  
+  console.log('🔄 Loading categories from database');
+  const categories = await db.category.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' }
+  });
+  
+  const formatted = categories.map(cat => ({
+    category: cat.name,
+    definition: cat.definition,
+    keywords: cat.keywords
+  }));
+  
+  categoryCache = { data: formatted, timestamp: Date.now() };
+  return formatted;
+}
 
 /**
  * Analyze articles using Gemini API with article analysis prompt
@@ -74,11 +109,11 @@ export const analyzeArticles = async (articles: GeminiAnalysisRequest['articles'
     throw new Error('At least one article is required for analysis');
   }
 
-  // Load the article analysis prompt
-  const systemPrompt = loadPromptTemplate('article-analysis.md');
+  // Load the article analysis prompt from database
+  const systemPrompt = await loadPromptTemplate('article-analysis');
   
-  // Load category definitions
-  const categories = loadCategoryDefinitions();
+  // Load category definitions from database
+  const categories = await loadCategoryDefinitions();
   
   // Create number range for output
   const numberRange = `1-${articles.length}`;
@@ -195,8 +230,8 @@ export const extractQuotes = async (articles: GeminiAnalysisRequest['articles'])
     throw new Error('At least one article is required for analysis');
   }
 
-  // Load the quote analysis prompt
-  const systemPrompt = loadPromptTemplate('quote-analysis.md');
+  // Load the quote analysis prompt from database
+  const systemPrompt = await loadPromptTemplate('quote-analysis');
   
   // Create number range for output
   const numberRange = `1-${articles.length}`;
