@@ -96,6 +96,7 @@ async function loadCategoryDefinitions(): Promise<any[]> {
  */
 export const analyzeArticles = async (articles: GeminiAnalysisRequest['articles']): Promise<any> => {
   const apiKey = process.env.GEMINI_API_KEY;
+  const timeoutMs = parseInt(process.env.GEMINI_TIMEOUT_MS || '300000'); // Default 5 minutes
   
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable is required');
@@ -108,6 +109,10 @@ export const analyzeArticles = async (articles: GeminiAnalysisRequest['articles'
   if (articles.length === 0) {
     throw new Error('At least one article is required for analysis');
   }
+
+  console.log(`⏳ Starting Gemini article analysis at ${new Date().toISOString()}`);
+  console.log(`📊 Processing ${articles.length} article${articles.length > 1 ? 's' : ''} - this may take 3-5 minutes`);
+  console.log(`⏱️  Timeout configured: ${timeoutMs / 1000} seconds`);
 
   // Load the article analysis prompt from database
   const systemPrompt = await loadPromptTemplate('article-analysis');
@@ -162,9 +167,11 @@ Return the analysis in the specified JSON format.`;
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 120000 // 2 minute timeout for Gemini analysis
+        timeout: timeoutMs
       }
     );
+
+    console.log(`✅ Gemini article analysis completed at ${new Date().toISOString()}`);
 
     const generatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text;
     
@@ -198,6 +205,8 @@ Return the analysis in the specified JSON format.`;
       throw new Error('Invalid response format from Gemini');
     }
 
+    console.log(`📈 Successfully parsed ${analysisResult.articles.length} article analysis results`);
+
     return analysisResult;
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
@@ -217,6 +226,7 @@ Return the analysis in the specified JSON format.`;
  */
 export const extractQuotes = async (articles: GeminiAnalysisRequest['articles']): Promise<any> => {
   const apiKey = process.env.GEMINI_API_KEY;
+  const timeoutMs = parseInt(process.env.GEMINI_TIMEOUT_MS || '300000'); // Default 5 minutes
   
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable is required');
@@ -229,6 +239,10 @@ export const extractQuotes = async (articles: GeminiAnalysisRequest['articles'])
   if (articles.length === 0) {
     throw new Error('At least one article is required for analysis');
   }
+
+  console.log(`⏳ Starting Gemini quote extraction at ${new Date().toISOString()}`);
+  console.log(`📊 Processing ${articles.length} article${articles.length > 1 ? 's' : ''} for quotes - this may take 3-5 minutes`);
+  console.log(`⏱️  Timeout configured: ${timeoutMs / 1000} seconds`);
 
   // Load the quote analysis prompt from database
   const systemPrompt = await loadPromptTemplate('quote-analysis');
@@ -276,9 +290,11 @@ Return the quote extraction in the specified JSON format.`;
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 120000 // 2 minute timeout for Gemini analysis
+        timeout: timeoutMs
       }
     );
+
+    console.log(`✅ Gemini quote extraction completed at ${new Date().toISOString()}`);
 
     const generatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text;
     
@@ -311,6 +327,8 @@ Return the quote extraction in the specified JSON format.`;
     if (!analysisResult.quotes || !Array.isArray(analysisResult.quotes)) {
       throw new Error('Invalid response format from Gemini');
     }
+
+    console.log(`💬 Successfully extracted ${analysisResult.quotes.length} quotes`);
 
     return analysisResult;
   } catch (error: any) {
