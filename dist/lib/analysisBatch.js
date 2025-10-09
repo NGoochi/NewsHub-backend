@@ -190,7 +190,7 @@ class AnalysisBatchService {
                 totalArticles: batch.totalArticles,
                 processedArticles: batch.processedArticles,
                 results: batch.results,
-                error: batch.error
+                error: batch.error || undefined
             };
         }
         catch (error) {

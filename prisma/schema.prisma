@@ -11,6 +11,7 @@ enum InputMethod {
   newsapi
   manual
   csv
+  pdf
 }
 
 enum Sentiment {
@@ -111,10 +112,10 @@ model ImportSession {
   id              String   @id @default(uuid())
   projectId       String
   project         Project  @relation(fields: [projectId], references: [id])
-  searchTerms     String[]
-  sources         String[]
-  startDate       DateTime
-  endDate         DateTime
+  searchTerms     String[] @default([])
+  sources         String[] @default([])
+  startDate       DateTime?
+  endDate         DateTime?
   articlesFound   Int
   articlesImported Int
   status          String   // 'running', 'completed', 'failed'

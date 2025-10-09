@@ -15,6 +15,7 @@ const analysis_1 = __importDefault(require("./routes/analysis"));
 const settings_1 = __importDefault(require("./routes/settings"));
 const export_1 = __importDefault(require("./routes/export"));
 const import_1 = __importDefault(require("./routes/import"));
+const categories_1 = __importDefault(require("./routes/categories"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 8080;
@@ -44,6 +45,7 @@ app.use("/analysis", analysis_1.default);
 app.use("/settings", settings_1.default);
 app.use("/export", export_1.default);
 app.use("/import", import_1.default);
+app.use("/categories", categories_1.default);
 // 404 handler
 app.use(errorHandler_1.notFoundHandler);
 // Global error handler

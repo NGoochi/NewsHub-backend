@@ -5,10 +5,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const importController_1 = require("../controllers/importController");
+const upload_1 = require("../middleware/upload");
 const router = express_1.default.Router();
-// Import preview and execution
+// Existing import preview and execution endpoints
 router.post('/preview', importController_1.previewImport);
 router.post('/start', importController_1.startImport);
+// New specialized import endpoints
+router.post('/newsapi', importController_1.importNewsAPI);
+router.post('/pdf', upload_1.pdfUpload.single('pdf'), importController_1.importPDF);
+router.post('/manual', importController_1.importManual);
 // Session management
 router.get('/session/:sessionId', importController_1.getSessionStatus);
 router.post('/session/:sessionId/cancel', importController_1.cancelSession);
