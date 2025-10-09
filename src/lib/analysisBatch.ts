@@ -43,9 +43,10 @@ export class AnalysisBatchService {
         throw new Error('Some articles not found or do not belong to project');
       }
 
-      // Limit to 10 articles max
-      if (request.articleIds.length > 10) {
-        throw new Error('Maximum 10 articles allowed per batch');
+      // Limit to configurable batch size (default 10 articles max)
+      const batchSize = parseInt(process.env.GEMINI_BATCH_SIZE || '10');
+      if (request.articleIds.length > batchSize) {
+        throw new Error(`Maximum ${batchSize} articles allowed per batch`);
       }
 
       // Create batch record
@@ -120,7 +121,7 @@ export class AnalysisBatchService {
         throw new Error('No articles with valid content found');
       }
 
-      // Process articles in batches of 10 (as per Gemini requirements)
+      // Process articles (batch size configurable via GEMINI_BATCH_SIZE environment variable)
       const results = {
         articleAnalysis: [],
         quoteExtraction: []
