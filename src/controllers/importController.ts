@@ -379,16 +379,34 @@ export const getAvailableLanguages = async (req: Request, res: Response) => {
 /**
  * Import articles using NewsAPI with boolean query
  * POST /import/newsapi
+ * 
+ * Expected request body format:
+ * {
+ *   "projectId": "uuid",
+ *   "query": {
+ *     "$query": { ... NewsAPI query structure ... },
+ *     "$filter": { "dataType": ["news", "blog"] }
+ *   },
+ *   "resultType": "articles",
+ *   "articlesSortBy": "date"
+ * }
  */
 export const importNewsAPI = async (req: Request, res: Response) => {
   try {
-    const { projectId, query, articleCount } = req.body;
+    const { projectId, query } = req.body;
     
     // Validate inputs
-    if (!projectId || !query) {
+    if (!projectId) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: projectId and query'
+        error: 'Missing required field: projectId'
+      });
+    }
+    
+    if (!query || !query.$query) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing or invalid query structure. Expected format: { "$query": { ... } }'
       });
     }
     
@@ -397,15 +415,6 @@ export const importNewsAPI = async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'Invalid project ID format'
-      });
-    }
-    
-    // Validate article count
-    const count = articleCount || 1000;
-    if (count < 10 || count > 3000) {
-      return res.status(400).json({
-        success: false,
-        error: 'Article count must be between 10 and 3000'
       });
     }
     
@@ -421,21 +430,27 @@ export const importNewsAPI = async (req: Request, res: Response) => {
       });
     }
     
-    // Extract search parameters from the boolean query structure
+    // Extract search parameters from the boolean query structure for session metadata
     const searchTerms = extractSearchTerms(query);
     const sourceIds = extractSourceIds(query);
     const startDate = extractDateStart(query) || new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const endDate = extractDateEnd(query) || new Date().toISOString().split('T')[0];
     
+    console.log('NewsAPI Import Request:');
+    console.log('- Search terms extracted:', searchTerms);
+    console.log('- Sources extracted:', sourceIds);
+    console.log('- Date range:', startDate, 'to', endDate);
+    
     // Use existing ImportService to handle the import
+    // Pass the entire query structure as the boolean query
     const importRequest: ImportRequest = {
       projectId,
-      searchTerms: searchTerms.length > 0 ? searchTerms : ['news'], // Default fallback
+      searchTerms: searchTerms.length > 0 ? searchTerms : ['news'], // Fallback for session tracking
       sourceIds: sourceIds || [],
       startDate,
       endDate,
       useBooleanQuery: true,
-      booleanQuery: JSON.stringify(query)
+      booleanQuery: JSON.stringify(query) // Pass the entire query object
     };
     
     // Start import using existing service
@@ -445,7 +460,8 @@ export const importNewsAPI = async (req: Request, res: Response) => {
       success: true,
       data: {
         sessionId: result.sessionId,
-        status: 'running'
+        status: 'running',
+        message: 'Import started successfully. Use the session ID to track progress.'
       },
       error: null
     });
