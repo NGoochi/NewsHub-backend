@@ -91,19 +91,20 @@ async function loadCategoryDefinitions(): Promise<any[]> {
 
 /**
  * Analyze articles using Gemini API with article analysis prompt
- * @param articles Array of articles to analyze (max 10)
+ * @param articles Array of articles to analyze (max configurable via GEMINI_BATCH_SIZE, default 10)
  * @returns Analysis results with summaries, categories, sentiment
  */
 export const analyzeArticles = async (articles: GeminiAnalysisRequest['articles']): Promise<any> => {
   const apiKey = process.env.GEMINI_API_KEY;
   const timeoutMs = parseInt(process.env.GEMINI_TIMEOUT_MS || '300000'); // Default 5 minutes
+  const batchSize = parseInt(process.env.GEMINI_BATCH_SIZE || '10'); // Default 10 articles per batch
   
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable is required');
   }
 
-  if (articles.length > 10) {
-    throw new Error('Maximum 10 articles can be analyzed per request');
+  if (articles.length > batchSize) {
+    throw new Error(`Maximum ${batchSize} articles can be analyzed per request`);
   }
 
   if (articles.length === 0) {
@@ -221,19 +222,20 @@ Return the analysis in the specified JSON format.`;
 
 /**
  * Extract quotes from articles using Gemini API with quote analysis prompt
- * @param articles Array of articles to analyze (max 10)
+ * @param articles Array of articles to analyze (max configurable via GEMINI_BATCH_SIZE, default 10)
  * @returns Quote extraction results
  */
 export const extractQuotes = async (articles: GeminiAnalysisRequest['articles']): Promise<any> => {
   const apiKey = process.env.GEMINI_API_KEY;
   const timeoutMs = parseInt(process.env.GEMINI_TIMEOUT_MS || '300000'); // Default 5 minutes
+  const batchSize = parseInt(process.env.GEMINI_BATCH_SIZE || '10'); // Default 10 articles per batch
   
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable is required');
   }
 
-  if (articles.length > 10) {
-    throw new Error('Maximum 10 articles can be analyzed per request');
+  if (articles.length > batchSize) {
+    throw new Error(`Maximum ${batchSize} articles can be analyzed per request`);
   }
 
   if (articles.length === 0) {
