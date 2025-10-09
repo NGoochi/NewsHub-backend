@@ -43,8 +43,8 @@ export class AnalysisBatchService {
         throw new Error('Some articles not found or do not belong to project');
       }
 
-      // Limit to configurable batch size (default 10 articles max)
-      const batchSize = parseInt(process.env.GEMINI_BATCH_SIZE || '10');
+      // Limit to configurable batch size (default 3 articles max)
+      const batchSize = parseInt(process.env.GEMINI_BATCH_SIZE || '3');
       if (request.articleIds.length > batchSize) {
         throw new Error(`Maximum ${batchSize} articles allowed per batch`);
       }
@@ -134,17 +134,29 @@ export class AnalysisBatchService {
         results.articleAnalysis = articleAnalysis;
 
         // Update articles with analysis results
+        console.log(`📝 Updating ${articleAnalysis.articles?.length || 0} articles with analysis results`);
+        
         for (const analysis of articleAnalysis.articles || []) {
-          await db.article.update({
-            where: { id: analysis['1_id'] },
-            data: {
-              summaryGemini: analysis['7_summary'],
-              categoryGemini: analysis['8_category'],
-              sentimentGemini: analysis['9_sentiment'].toLowerCase(),
-              translatedGemini: analysis['10_translated'],
-              analysedAt: new Date()
-            }
-          });
+          try {
+            console.log(`🔄 Updating article ${analysis['1_id']} with analysis data`);
+            
+            const updatedArticle = await db.article.update({
+              where: { id: analysis['1_id'] },
+              data: {
+                summaryGemini: analysis['7_summary'],
+                categoryGemini: analysis['8_category'],
+                sentimentGemini: analysis['9_sentiment'].toLowerCase(),
+                translatedGemini: analysis['10_translated'],
+                analysedAt: new Date()
+              }
+            });
+            
+            console.log(`✅ Successfully updated article ${analysis['1_id']}`);
+          } catch (updateError: any) {
+            console.error(`❌ Failed to update article ${analysis['1_id']}:`, updateError.message);
+            // Continue with other articles instead of failing the entire batch
+            // This ensures partial success rather than complete failure
+          }
         }
 
         // Quote extraction
@@ -153,15 +165,26 @@ export class AnalysisBatchService {
         results.quoteExtraction = quoteExtraction;
 
         // Store extracted quotes
+        console.log(`💬 Storing ${quoteExtraction.quotes?.length || 0} extracted quotes`);
+        
         for (const quote of quoteExtraction.quotes || []) {
-          await db.quote.create({
-            data: {
-              articleId: quote['1_articleId'],
-              stakeholderNameGemini: quote['2_stakeholderName'],
-              stakeholderAffiliationGemini: quote['3_stakeholderAffiliation'],
-              quoteGemini: quote['4_quote']
-            }
-          });
+          try {
+            console.log(`🔄 Creating quote for article ${quote['1_articleId']}`);
+            
+            await db.quote.create({
+              data: {
+                articleId: quote['1_articleId'],
+                stakeholderNameGemini: quote['2_stakeholderName'],
+                stakeholderAffiliationGemini: quote['3_stakeholderAffiliation'],
+                quoteGemini: quote['4_quote']
+              }
+            });
+            
+            console.log(`✅ Successfully created quote for article ${quote['1_articleId']}`);
+          } catch (quoteError: any) {
+            console.error(`❌ Failed to create quote for article ${quote['1_articleId']}:`, quoteError.message);
+            // Continue with other quotes instead of failing the entire batch
+          }
         }
 
         // Mark batch as completed
@@ -174,6 +197,9 @@ export class AnalysisBatchService {
             results: results
           }
         });
+
+        console.log(`🎉 Batch ${batchId} completed successfully!`);
+        console.log(`📊 Processed ${batch.totalArticles} articles with analysis and quotes`);
 
         return {
           batchId,

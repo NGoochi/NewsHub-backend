@@ -18,7 +18,13 @@ async function main() {
   // Load categories
   const categoriesPath = path.join(__dirname, '..', 'NewsHub-docs', 'docs', 'prompts', 'category-definitions.md');
   const categoriesContent = fs.readFileSync(categoriesPath, 'utf-8');
-  const categories = JSON.parse(categoriesContent.trim());
+  
+  // Extract JSON from markdown file (skip the note at the top)
+  const jsonMatch = categoriesContent.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) {
+    throw new Error('Could not find JSON array in category-definitions.md');
+  }
+  const categories = JSON.parse(jsonMatch[0]);
 
   // Seed PromptTemplate for article analysis
   const existingArticlePrompt = await prisma.promptTemplate.findFirst({
