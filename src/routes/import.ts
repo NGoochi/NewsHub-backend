@@ -8,14 +8,23 @@ import {
   getProjectStats,
   getSearchSources,
   getAvailableCountries,
-  getAvailableLanguages
+  getAvailableLanguages,
+  importNewsAPI,
+  importPDF,
+  importManual
 } from '../controllers/importController';
+import { pdfUpload } from '../middleware/upload';
 
 const router = express.Router();
 
-// Import preview and execution
+// Existing import preview and execution endpoints
 router.post('/preview', previewImport);
 router.post('/start', startImport);
+
+// New specialized import endpoints
+router.post('/newsapi', importNewsAPI);
+router.post('/pdf', pdfUpload.single('pdf'), importPDF);
+router.post('/manual', importManual);
 
 // Session management
 router.get('/session/:sessionId', getSessionStatus);

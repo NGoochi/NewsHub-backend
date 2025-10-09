@@ -79,36 +79,49 @@ class NewsAPIClient {
      */
     buildRequest(params) {
         const { searchTerms, sources, startDate, endDate, useBooleanQuery, booleanQuery } = params;
+        // If using boolean query, parse and use it directly
+        if (useBooleanQuery && booleanQuery) {
+            try {
+                const parsedQuery = JSON.parse(booleanQuery);
+                // Check if the parsed query already has the full structure
+                if (parsedQuery.$query) {
+                    // The query already contains the NewsAPI format
+                    return {
+                        query: parsedQuery,
+                        $filter: parsedQuery.$filter || {
+                            dataType: ["news", "blog"]
+                        },
+                        resultType: "articles",
+                        articlesSortBy: "date",
+                        apiKey: process.env.NEWSAPI_API_KEY || ''
+                    };
+                }
+            }
+            catch (error) {
+                console.error('Error parsing boolean query, falling back to simple query:', error);
+            }
+        }
+        // Build simple query structure
         const query = {
             $query: {
                 $and: []
             }
         };
         // Add search terms
-        if (useBooleanQuery && booleanQuery) {
-            // Parse boolean query and convert to NewsAPI.ai format
-            const parsedQuery = this.parseBooleanQuery(booleanQuery);
-            if (parsedQuery) {
-                query.$query.$and.push(parsedQuery);
-            }
+        if (searchTerms.length === 1) {
+            query.$query.$and.push({
+                keyword: searchTerms[0],
+                keywordLoc: "body"
+            });
         }
-        else {
-            // Simple OR logic for multiple terms
-            if (searchTerms.length === 1) {
-                query.$query.$and.push({
-                    keyword: searchTerms[0],
-                    keywordLoc: "body"
-                });
-            }
-            else if (searchTerms.length > 1) {
-                const termConditions = searchTerms.map(term => ({
-                    keyword: term,
-                    keywordLoc: "body"
-                }));
-                query.$query.$and.push({
-                    $or: termConditions
-                });
-            }
+        else if (searchTerms.length > 1) {
+            const termConditions = searchTerms.map(term => ({
+                keyword: term,
+                keywordLoc: "body"
+            }));
+            query.$query.$and.push({
+                $or: termConditions
+            });
         }
         // Add sources filter
         if (sources.length > 0) {
