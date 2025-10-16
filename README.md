@@ -80,6 +80,7 @@ src/
    PORT=8080
    NODE_ENV=development
    GEMINI_CONTEXT_TTL="3600s"
+   GEMINI_BATCH_SIZE=10
    ```
 
 3. **Database setup**:
@@ -216,6 +217,7 @@ NewsHub implements Gemini context caching to improve performance and reduce API 
 
 ### Environment Variables
 - `GEMINI_CONTEXT_TTL`: Cache time-to-live (default: "3600s" = 1 hour)
+- `GEMINI_BATCH_SIZE`: Maximum articles per analysis batch (default: 10)
 
 ### Cache Management
 The system automatically manages context caches, but you can also manually control them through the settings endpoints.
