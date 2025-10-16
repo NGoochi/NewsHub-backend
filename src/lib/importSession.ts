@@ -23,10 +23,8 @@ export interface ImportSessionResult {
 }
 
 export class ImportSessionManager {
-  private newsapiClient: NewsAPIClient;
-
   constructor() {
-    this.newsapiClient = new NewsAPIClient();
+    // NewsAPIClient will be created fresh for each import session
   }
 
   /**
@@ -85,14 +83,17 @@ export class ImportSessionManager {
     try {
       console.log(`Starting import process for session ${sessionId}`);
 
+      // Create a fresh NewsAPIClient instance for this import session
+      const newsapiClient = new NewsAPIClient();
+
       // Set custom article limit if provided
       if (config.articleLimit) {
         console.log(`Setting article limit to ${config.articleLimit}`);
-        this.newsapiClient.setMaxTotalArticles(config.articleLimit);
+        newsapiClient.setMaxTotalArticles(config.articleLimit);
       }
 
       // Build NewsAPI.ai request
-      const request = this.newsapiClient.buildRequest({
+      const request = newsapiClient.buildRequest({
         searchTerms: config.searchTerms,
         sources: config.sources,
         startDate: config.startDate,
@@ -103,7 +104,7 @@ export class ImportSessionManager {
 
       // Fetch articles from NewsAPI.ai
       console.log('Fetching articles from NewsAPI.ai...');
-      const articles = await this.newsapiClient.fetchArticles(request);
+      const articles = await newsapiClient.fetchArticles(request);
       
       console.log(`Found ${articles.length} articles from NewsAPI.ai`);
 
@@ -117,7 +118,7 @@ export class ImportSessionManager {
       }
 
       // Format articles for database
-      const formattedArticles = this.newsapiClient.formatArticlesForDatabase(articles);
+      const formattedArticles = newsapiClient.formatArticlesForDatabase(articles);
 
       // Save articles to database
       console.log('Saving articles to database...');
