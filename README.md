@@ -23,27 +23,37 @@ A server-based application that retrieves, analyses, and organises news articles
 src/
 ├── index.ts                 # Entry point / server setup
 ├── routes/                  # Express routes
-│   ├── projects.ts
-│   ├── articles.ts
-│   ├── quotes.ts
-│   ├── analysis.ts
-│   ├── settings.ts
-│   └── export.ts
+│   ├── projects.ts         # Project management endpoints
+│   ├── articles.ts         # Article CRUD endpoints
+│   ├── quotes.ts           # Quote CRUD endpoints
+│   ├── import.ts           # Import workflow endpoints
+│   ├── analysis.ts         # Analysis batch endpoints
+│   ├── categories.ts       # Category management endpoints
+│   ├── settings.ts         # Settings and configuration
+│   └── export.ts           # Google Sheets export
 ├── controllers/             # Business logic for routes
 │   ├── projectController.ts
 │   ├── articleController.ts
 │   ├── quoteController.ts
+│   ├── importController.ts # Import workflow coordination
 │   ├── analysisController.ts
+│   ├── categoryController.ts
 │   ├── settingsController.ts
 │   └── exportController.ts
 ├── lib/                     # External API helpers
 │   ├── db.ts               # Prisma client instance
 │   ├── newsapi.ts          # NewsAPI integration
-│   ├── gemini.ts           # Gemini analysis
-│   └── sheets.ts           # Google Sheets export
+│   ├── gemini.ts           # Gemini analysis with context caching
+│   ├── sheets.ts           # Google Sheets export
+│   ├── importService.ts    # Import service coordination
+│   ├── importSession.ts    # Import session management
+│   ├── analysisBatch.ts    # Analysis batch processing
+│   └── pdfExtractor.ts     # PDF content extraction
 ├── jobs/                    # Background processing
 │   ├── queue.ts            # Job queue manager
 │   └── worker.ts           # Background processor
+├── middleware/              # Express middleware
+│   └── upload.ts           # File upload handling
 └── utils/                   # Helper modules
     ├── validation.ts        # Input validation
     ├── formatters.ts       # Data formatting
@@ -69,6 +79,7 @@ src/
    GOOGLE_REFRESH_TOKEN="your_google_refresh_token"
    PORT=8080
    NODE_ENV=development
+   GEMINI_CONTEXT_TTL="3600s"
    ```
 
 3. **Database setup**:
@@ -97,23 +108,48 @@ src/
 
 ### Articles
 - `GET /articles` - List all articles
-- `POST /articles/import` - Import articles from NewsAPI
+- `POST /articles` - Create a new article manually
 - `GET /articles/project/:projectId` - Get articles by project
 - `GET /articles/:id` - Get article by ID
 - `PUT /articles/:id` - Update article
 - `DELETE /articles/:id` - Delete article
 
+### Import
+- `POST /import/preview` - Preview import from NewsAPI
+- `POST /import/start` - Start import session
+- `POST /import/newsapi` - Import articles from NewsAPI
+- `POST /import/pdf` - Import articles from PDF upload
+- `POST /import/manual` - Import articles manually
+- `GET /import/session/:sessionId` - Get import session status
+- `POST /import/session/:sessionId/cancel` - Cancel import session
+- `GET /import/project/:projectId/sessions` - Get project import sessions
+- `GET /import/project/:projectId/stats` - Get project import statistics
+- `GET /import/sources` - Get available search sources
+- `GET /import/countries` - Get available countries
+- `GET /import/languages` - Get available languages
+
 ### Quotes
 - `GET /quotes` - List all quotes
+- `POST /quotes` - Create a new quote
 - `GET /quotes/article/:articleId` - Get quotes by article
 - `GET /quotes/:id` - Get quote by ID
 - `PUT /quotes/:id` - Update quote
 - `DELETE /quotes/:id` - Delete quote
 
 ### Analysis
-- `POST /analysis/run` - Start Gemini analysis
-- `GET /analysis/status/:projectId` - Get analysis status
-- `GET /analysis/progress/:projectId` - Get analysis progress
+- `POST /analysis/batch` - Create analysis batch
+- `POST /analysis/batch/:batchId/start` - Start analysis batch
+- `GET /analysis/batch/:batchId` - Get analysis batch status
+- `POST /analysis/batch/:batchId/cancel` - Cancel analysis batch
+- `GET /analysis/project/:projectId/batches` - Get project analysis batches
+
+### Categories
+- `GET /categories` - List all categories
+- `POST /categories` - Create a new category
+- `GET /categories/:id` - Get category by ID
+- `PUT /categories/:id` - Update category
+- `DELETE /categories/:id` - Delete category (soft delete)
+- `PUT /categories/reorder` - Reorder categories
 
 ### Settings
 - `GET /settings` - Get application settings
@@ -157,12 +193,32 @@ All API responses follow this structure:
 
 ## Database Schema
 
-The application uses three main models:
+The application uses the following models:
 
-- **Project**: Container for articles and analysis
+- **Project**: Container for articles and analysis (with archiving support)
 - **Article**: News articles with metadata and analysis results
 - **Quote**: Extracted quotes from articles with stakeholder information
 - **AnalysisJob**: Background job tracking for Gemini analysis
+- **AnalysisBatch**: Batch processing for multiple articles
+- **SearchSource**: Available news sources for importing
+- **ImportSession**: Import session tracking and management
+- **PromptTemplate**: Gemini prompt templates for analysis
+- **Category**: Category definitions for article classification
+
+## Context Caching
+
+NewsHub implements Gemini context caching to improve performance and reduce API costs:
+
+### How it Works
+- **Implicit Caching**: Uses Gemini 2.5's built-in implicit caching by structuring prompts effectively
+- **Content Hash Tracking**: Monitors prompt changes to invalidate cache when needed
+- **Automatic Refresh**: Cache refreshes when prompts or categories are updated
+
+### Environment Variables
+- `GEMINI_CONTEXT_TTL`: Cache time-to-live (default: "3600s" = 1 hour)
+
+### Cache Management
+The system automatically manages context caches, but you can also manually control them through the settings endpoints.
 
 ## License
 

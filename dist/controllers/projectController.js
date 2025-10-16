@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProject = exports.updateProject = exports.getProjectById = exports.getAllProjects = exports.createProject = void 0;
+exports.deleteProject = exports.bulkUnarchiveProjects = exports.bulkArchiveProjects = exports.unarchiveProject = exports.archiveProject = exports.updateProject = exports.getProjectById = exports.getAllProjects = exports.createProject = void 0;
 const db_1 = __importDefault(require("../lib/db"));
 const validation_1 = require("../utils/validation");
 /**
@@ -150,12 +150,166 @@ const updateProject = async (req, res) => {
 };
 exports.updateProject = updateProject;
 /**
- * Delete a project and all associated articles/quotes
+ * Archive a project
+ * PUT /projects/:id/archive
+ */
+const archiveProject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Check if project exists
+        const existingProject = await db_1.default.project.findUnique({
+            where: { id }
+        });
+        if (!existingProject) {
+            return res.status(404).json({
+                success: false,
+                error: "Project not found"
+            });
+        }
+        const project = await db_1.default.project.update({
+            where: { id },
+            data: { archived: true }
+        });
+        res.json({
+            success: true,
+            data: project,
+            error: null
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: "Failed to archive project"
+        });
+    }
+};
+exports.archiveProject = archiveProject;
+/**
+ * Unarchive a project
+ * PUT /projects/:id/unarchive
+ */
+const unarchiveProject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Check if project exists
+        const existingProject = await db_1.default.project.findUnique({
+            where: { id }
+        });
+        if (!existingProject) {
+            return res.status(404).json({
+                success: false,
+                error: "Project not found"
+            });
+        }
+        const project = await db_1.default.project.update({
+            where: { id },
+            data: { archived: false }
+        });
+        res.json({
+            success: true,
+            data: project,
+            error: null
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: "Failed to unarchive project"
+        });
+    }
+};
+exports.unarchiveProject = unarchiveProject;
+/**
+ * Bulk archive projects
+ * POST /projects/bulk-archive
+ */
+const bulkArchiveProjects = async (req, res) => {
+    try {
+        const { projectIds } = req.body;
+        if (!Array.isArray(projectIds) || projectIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: "projectIds must be a non-empty array"
+            });
+        }
+        const result = await db_1.default.project.updateMany({
+            where: { id: { in: projectIds } },
+            data: { archived: true }
+        });
+        res.json({
+            success: true,
+            data: {
+                message: `Successfully archived ${result.count} projects`,
+                count: result.count
+            },
+            error: null
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: "Failed to bulk archive projects"
+        });
+    }
+};
+exports.bulkArchiveProjects = bulkArchiveProjects;
+/**
+ * Bulk unarchive projects
+ * POST /projects/bulk-unarchive
+ */
+const bulkUnarchiveProjects = async (req, res) => {
+    try {
+        const { projectIds } = req.body;
+        if (!Array.isArray(projectIds) || projectIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: "projectIds must be a non-empty array"
+            });
+        }
+        const result = await db_1.default.project.updateMany({
+            where: { id: { in: projectIds } },
+            data: { archived: false }
+        });
+        res.json({
+            success: true,
+            data: {
+                message: `Successfully unarchived ${result.count} projects`,
+                count: result.count
+            },
+            error: null
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: "Failed to bulk unarchive projects"
+        });
+    }
+};
+exports.bulkUnarchiveProjects = bulkUnarchiveProjects;
+/**
+ * Delete a project and all associated articles/quotes (only if archived)
  * DELETE /projects/:id
  */
 const deleteProject = async (req, res) => {
     try {
         const { id } = req.params;
+        // Check if project exists and is archived
+        const existingProject = await db_1.default.project.findUnique({
+            where: { id }
+        });
+        if (!existingProject) {
+            return res.status(404).json({
+                success: false,
+                error: "Project not found"
+            });
+        }
+        if (!existingProject.archived) {
+            return res.status(403).json({
+                success: false,
+                error: "Project must be archived before deletion"
+            });
+        }
         await db_1.default.project.delete({
             where: { id }
         });

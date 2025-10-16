@@ -30,8 +30,8 @@ class AnalysisBatchService {
             if (articles.length !== request.articleIds.length) {
                 throw new Error('Some articles not found or do not belong to project');
             }
-            // Limit to configurable batch size (default 10 articles max)
-            const batchSize = parseInt(process.env.GEMINI_BATCH_SIZE || '10');
+            // Limit to configurable batch size (default 3 articles max)
+            const batchSize = parseInt(process.env.GEMINI_BATCH_SIZE || '3');
             if (request.articleIds.length > batchSize) {
                 throw new Error(`Maximum ${batchSize} articles allowed per batch`);
             }
