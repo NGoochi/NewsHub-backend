@@ -17,14 +17,24 @@ class PDFExtractor {
         // Step 3: Find index pages and extract article listings
         const articleIndex = this.extractArticleIndex(pages);
         console.log(`Found ${articleIndex.length} articles in index`);
+        // If no articles found in index, try direct extraction from first page
+        if (articleIndex.length === 0) {
+            console.log('No index pages found, trying Factiva fallback extraction...');
+            const firstPageText = pages.length > 0 ? pages[0].text : '';
+            const factivaArticles = this.extractFactivaArticles(firstPageText);
+            if (factivaArticles.length > 0) {
+                articleIndex.push(...factivaArticles);
+                console.log(`Factiva fallback found ${factivaArticles.length} articles`);
+            }
+        }
         // Step 4: Extract full text for each article
         const articles = this.extractArticleContents(articleIndex, pages);
-        // Step 5: Extract metadata for each article
+        // Step 5: Extract metadata for each article (before cleaning)
         articles.forEach(article => {
             const metadata = this.extractMetadata(article.textContent, article.title);
             Object.assign(article, metadata);
         });
-        // Step 6: Clean Factiva headers and footers
+        // Step 6: Clean Factiva headers and footers (after metadata extraction)
         articles.forEach(article => {
             article.textContent = this.cleanFactivaText(article.textContent);
         });
@@ -91,11 +101,16 @@ class PDFExtractor {
      */
     parseIndexPage(text) {
         const articles = [];
+        console.log('=== PARSING INDEX PAGE ===');
+        console.log('Raw text length:', text.length);
+        console.log('First 500 chars of raw text:', text.substring(0, 500));
         // Clean up Factiva headers
         let cleanText = text
             .replace(/Page \d+ of \d+\s*© \d+ Factiva, Inc\. All rights reserved\./g, '')
             .replace(/Page \d+ of \d+/g, '')
             .replace(/© \d+ Factiva, Inc\. All rights reserved\./g, '');
+        console.log('After cleaning, text length:', cleanText.length);
+        console.log('First 500 chars after cleaning:', cleanText.substring(0, 500));
         // Pattern: "Article Title .............. PageNumber"
         const pagePattern = /\.{2,}\s*(\d+)/g;
         const matches = [];
@@ -104,30 +119,40 @@ class PDFExtractor {
             const pageNum = parseInt(match[1]);
             // Valid page numbers are typically 1-500
             if (pageNum > 1 && pageNum < 500) {
+                console.log(`Found page pattern: ...${pageNum} at index ${match.index}`);
                 matches.push({
                     number: pageNum,
                     index: match.index
                 });
             }
         }
+        console.log(`Total page number matches found: ${matches.length}`);
         // Extract titles (text before each page number)
         let lastIndex = 0;
         for (const current of matches) {
             const titleText = cleanText.substring(lastIndex, current.index).trim();
             // Clean the title
-            const cleanTitle = titleText
+            let cleanTitle = titleText
                 .replace(/\.{3,}/g, ' ')
                 .replace(/\s+/g, ' ')
                 .trim();
+            // Remove leading page numbers that might have been concatenated (e.g., "2Today in History" -> "Today in History")
+            cleanTitle = cleanTitle.replace(/^\d+/, '').trim();
+            console.log(`Extracted title candidate: "${cleanTitle}" -> page ${current.number}`);
             // Validate title
             if (cleanTitle.length >= 5 && this.isValidArticleTitle(cleanTitle)) {
+                console.log(`  ✓ Valid title`);
                 articles.push({
                     title: cleanTitle,
                     pageNumber: current.number
                 });
             }
+            else {
+                console.log(`  ✗ Invalid title (length: ${cleanTitle.length}, valid: ${this.isValidArticleTitle(cleanTitle)})`);
+            }
             lastIndex = current.index + current.number.toString().length;
         }
+        console.log(`=== PARSE COMPLETE: ${articles.length} articles found ===\n`);
         return articles;
     }
     /**
@@ -361,6 +386,134 @@ class PDFExtractor {
             console.log(`Filtered out ${discarded} invalid article(s)`);
         }
         return filtered;
+    }
+    /**
+     * Extract Factiva articles directly from index text (fallback method)
+     * This is used when the standard index parsing fails
+     */
+    extractFactivaArticles(text) {
+        const articles = [];
+        console.log('Extracting Factiva articles from text length:', text.length);
+        // Step 1: Filter out Factiva headers
+        let cleanText = text
+            .replace(/Page \d+ of \d+\s*© \d+ Factiva, Inc\. All rights reserved\./g, '')
+            .replace(/Page \d+ of \d+/g, '')
+            .replace(/© \d+ Factiva, Inc\. All rights reserved\./g, '');
+        console.log('Text after filtering headers length:', cleanText.length);
+        // Step 2: Find all page numbers in the text
+        const pageNumbers = [];
+        // Primary pattern: Look for numbers preceded by dots (page numbers in index)
+        const dotPagePattern = /\.{2,}\s*(\d+)/g;
+        let dotMatch;
+        while ((dotMatch = dotPagePattern.exec(cleanText)) !== null) {
+            const pageNum = parseInt(dotMatch[1]);
+            // Valid page numbers are typically 1-500
+            if (pageNum > 1 && pageNum < 500) {
+                pageNumbers.push({
+                    number: pageNum,
+                    index: dotMatch.index + dotMatch[0].length - pageNum.toString().length
+                });
+            }
+        }
+        // Secondary pattern: Numbers at end of lines
+        const endLinePattern = /(\d+)(?:\s*$|\s*\n)/g;
+        let endLineMatch;
+        while ((endLineMatch = endLinePattern.exec(cleanText)) !== null) {
+            const pageNum = parseInt(endLineMatch[1]);
+            if (pageNum > 1 && pageNum < 500) {
+                const beforeText = cleanText.substring(Math.max(0, endLineMatch.index - 30), endLineMatch.index);
+                // Check for indicators this is a page number
+                const isPageNumber = beforeText.includes('...') ||
+                    beforeText.includes('..') ||
+                    beforeText.includes('.') ||
+                    beforeText.trim().endsWith('.') ||
+                    /\s{3,}$/.test(beforeText) || // Multiple spaces at end
+                    /[A-Z]\s*$/.test(beforeText); // Ends with capital letter
+                if (isPageNumber) {
+                    const existingPage = pageNumbers.find(p => p.number === pageNum && Math.abs(p.index - endLineMatch.index) < 5);
+                    if (!existingPage) {
+                        pageNumbers.push({
+                            number: pageNum,
+                            index: endLineMatch.index
+                        });
+                    }
+                }
+            }
+        }
+        // Tertiary pattern: Numbers after article-like text
+        const articleNumberPattern = /([A-Z][A-Z\s]+[A-Z])\s*(\d+)/g;
+        let articleMatch;
+        while ((articleMatch = articleNumberPattern.exec(cleanText)) !== null) {
+            const potentialTitle = articleMatch[1].trim();
+            const pageNum = parseInt(articleMatch[2]);
+            if (pageNum > 1 && pageNum < 500 &&
+                potentialTitle.length > 5 &&
+                !potentialTitle.includes('Page') &&
+                !potentialTitle.includes('Factiva')) {
+                const existingPage = pageNumbers.find(p => p.number === pageNum && Math.abs(p.index - (articleMatch.index + articleMatch[1].length)) < 5);
+                if (!existingPage) {
+                    pageNumbers.push({
+                        number: pageNum,
+                        index: articleMatch.index + articleMatch[1].length
+                    });
+                }
+            }
+        }
+        // Sort page numbers by position
+        pageNumbers.sort((a, b) => a.index - b.index);
+        console.log('Found page numbers:', pageNumbers);
+        // Step 3: Extract titles before each page number
+        for (let i = 0; i < pageNumbers.length; i++) {
+            const currentPage = pageNumbers[i];
+            let startIndex = 0;
+            if (i > 0) {
+                const previousPage = pageNumbers[i - 1];
+                startIndex = previousPage.index + previousPage.number.toString().length;
+            }
+            const endIndex = currentPage.index;
+            if (endIndex > startIndex) {
+                const textSegment = cleanText.substring(startIndex, endIndex).trim();
+                let cleanTitle = textSegment
+                    .replace(/\.{3,}/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                // Remove leading page numbers that might have been concatenated
+                cleanTitle = cleanTitle.replace(/^\d+/, '').trim();
+                if (cleanTitle.length >= 5 && this.isValidArticleTitle(cleanTitle)) {
+                    console.log(`Article found: "${cleanTitle}" -> page ${currentPage.number}`);
+                    articles.push({
+                        title: cleanTitle,
+                        pageNumber: currentPage.number
+                    });
+                }
+            }
+        }
+        // Handle text at the beginning (before first page number)
+        if (pageNumbers.length > 0) {
+            const firstPage = pageNumbers[0];
+            const textBeforeFirstPage = cleanText.substring(0, firstPage.index).trim();
+            if (textBeforeFirstPage.length > 0) {
+                let potentialTitle = textBeforeFirstPage
+                    .replace(/\.{3,}/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                // Remove leading page numbers
+                potentialTitle = potentialTitle.replace(/^\d+/, '').trim();
+                if (potentialTitle.length >= 5 && this.isValidArticleTitle(potentialTitle)) {
+                    console.log(`First article found: "${potentialTitle}" -> page ${firstPage.number}`);
+                    // Insert at beginning
+                    articles.unshift({
+                        title: potentialTitle,
+                        pageNumber: firstPage.number
+                    });
+                }
+            }
+        }
+        // Remove duplicates and sort
+        const uniqueArticles = articles.filter((article, index, self) => index === self.findIndex(a => a.pageNumber === article.pageNumber && a.title === article.title));
+        uniqueArticles.sort((a, b) => a.pageNumber - b.pageNumber);
+        console.log(`Total Factiva articles found: ${uniqueArticles.length}`, uniqueArticles);
+        return uniqueArticles;
     }
 }
 exports.PDFExtractor = PDFExtractor;

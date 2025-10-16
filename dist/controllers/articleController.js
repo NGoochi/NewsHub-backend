@@ -123,6 +123,22 @@ exports.getAllArticles = getAllArticles;
 const getArticlesByProject = async (req, res) => {
     try {
         const { projectId } = req.params;
+        // First check if project exists and is not archived
+        const project = await db_1.default.project.findUnique({
+            where: { id: projectId }
+        });
+        if (!project) {
+            return res.status(404).json({
+                success: false,
+                error: "Project not found"
+            });
+        }
+        if (project.archived) {
+            return res.status(403).json({
+                success: false,
+                error: "Cannot access articles from archived project"
+            });
+        }
         const articles = await db_1.default.article.findMany({
             where: { projectId },
             include: {
@@ -162,6 +178,13 @@ const getArticleById = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 error: "Article not found"
+            });
+        }
+        // Check if parent project is archived
+        if (article.project.archived) {
+            return res.status(403).json({
+                success: false,
+                error: "Cannot access article from archived project"
             });
         }
         res.json({

@@ -27,8 +27,28 @@ router.post("/", projectController_1.createProject);
  */
 router.put("/:id", projectController_1.updateProject);
 /**
+ * PUT /projects/:id/archive
+ * Archive a project
+ */
+router.put("/:id/archive", projectController_1.archiveProject);
+/**
+ * PUT /projects/:id/unarchive
+ * Unarchive a project
+ */
+router.put("/:id/unarchive", projectController_1.unarchiveProject);
+/**
+ * POST /projects/bulk-archive
+ * Bulk archive multiple projects
+ */
+router.post("/bulk-archive", projectController_1.bulkArchiveProjects);
+/**
+ * POST /projects/bulk-unarchive
+ * Bulk unarchive multiple projects
+ */
+router.post("/bulk-unarchive", projectController_1.bulkUnarchiveProjects);
+/**
  * DELETE /projects/:id
- * Delete a project and all associated articles/quotes
+ * Delete a project and all associated articles/quotes (only if archived)
  */
 router.delete("/:id", projectController_1.deleteProject);
 exports.default = router;

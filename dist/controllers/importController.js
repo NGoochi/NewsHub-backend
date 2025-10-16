@@ -481,8 +481,18 @@ const importPDF = async (req, res) => {
         const articleIds = [];
         let imported = 0;
         let failed = 0;
+        const errors = [];
         for (const article of extractedArticles) {
             try {
+                console.log(`\nAttempting to save article: "${article.title}"`);
+                console.log('Article data:', {
+                    title: article.title,
+                    source: article.source,
+                    author: article.author,
+                    publishDate: article.publishDate,
+                    wordCount: article.wordCount,
+                    textLength: article.textContent?.length
+                });
                 const createdArticle = await db_1.default.article.create({
                     data: {
                         projectId: projectId,
@@ -496,15 +506,22 @@ const importPDF = async (req, res) => {
                         sourceUri: article.source || 'factiva',
                     }
                 });
+                console.log(`✓ Successfully saved article with ID: ${createdArticle.id}`);
                 articleIds.push(createdArticle.id);
                 imported++;
             }
             catch (error) {
-                console.error(`Failed to save article "${article.title}":`, error);
+                console.error(`✗ Failed to save article "${article.title}":`, error.message);
+                console.error('Full error:', error);
+                errors.push({ title: article.title, error: error.message });
                 failed++;
             }
         }
-        console.log(`Import complete: ${imported} imported, ${failed} failed`);
+        console.log(`\nImport complete: ${imported} imported, ${failed} failed`);
+        if (errors.length > 0) {
+            console.log('\nErrors encountered:');
+            errors.forEach(e => console.log(`  - ${e.title}: ${e.error}`));
+        }
         return res.json({
             success: true,
             data: {
