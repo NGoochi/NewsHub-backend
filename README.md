@@ -160,6 +160,12 @@ src/
 - `GET /settings/categories` - Get categories
 - `PUT /settings/categories` - Update categories
 
+### Context Cache Management
+- `GET /settings/context-cache` - Get context cache status
+- `POST /settings/context-cache/refresh` - Refresh all context caches
+- `DELETE /settings/context-cache` - Clear all context caches
+- `DELETE /settings/context-cache/batch` - Clear only batch context cache
+
 ### Export
 - `POST /export/:projectId` - Export to Google Sheets
 - `GET /export/status/:projectId` - Get export status
@@ -208,19 +214,31 @@ The application uses the following models:
 
 ## Context Caching
 
-NewsHub implements Gemini context caching to improve performance and reduce API costs:
+NewsHub implements sophisticated batch-level context caching to optimize token usage and improve performance:
 
 ### How it Works
-- **Implicit Caching**: Uses Gemini 2.5's built-in implicit caching by structuring prompts effectively
+- **Batch-Level Caching**: Context is cached at the start of each analysis batch and reused for all sub-batches
+- **Multi-Tier Cache System**: 
+  - **Batch Cache** (highest priority) - Used during active batch processing
+  - **Regular Cache** (fallback) - Used for individual requests outside batches
+  - **Fresh Load** (last resort) - Loads from database if no cache available
 - **Content Hash Tracking**: Monitors prompt changes to invalidate cache when needed
-- **Automatic Refresh**: Cache refreshes when prompts or categories are updated
+- **Automatic Management**: Cache refreshes when prompts or categories are updated
+
+### Token Optimization
+- **Before**: Each sub-batch (3 articles) sent full prompts + categories to Gemini
+- **After**: Batch context loaded once, reused for all sub-batches in the same analysis run
+- **Result**: Significant token savings while maintaining prompt update capability
 
 ### Environment Variables
 - `GEMINI_CONTEXT_TTL`: Cache time-to-live (default: "3600s" = 1 hour)
 - `GEMINI_BATCH_SIZE`: Maximum articles per analysis batch (default: 10)
 
 ### Cache Management
-The system automatically manages context caches, but you can also manually control them through the settings endpoints.
+The system automatically manages context caches with intelligent cleanup:
+- Batch cache cleared automatically when batch completes (success or failure)
+- Regular cache persists for individual requests
+- Manual cache management available via API endpoints
 
 ## License
 

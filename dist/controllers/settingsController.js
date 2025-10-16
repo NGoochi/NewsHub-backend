@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateCategories = exports.getCategories = exports.updateGeminiPrompts = exports.getGeminiPrompts = exports.updateSettings = exports.getSettings = void 0;
+exports.clearBatchContextCache = exports.clearContextCache = exports.refreshContextCache = exports.getContextCacheStatus = exports.updateCategories = exports.getCategories = exports.updateGeminiPrompts = exports.getGeminiPrompts = exports.updateSettings = exports.getSettings = void 0;
+const contextCache_1 = require("../lib/contextCache");
 // TODO: Implement settings storage (could be in database or config files)
 // For now, using placeholder functions
 /**
@@ -150,3 +151,87 @@ const updateCategories = async (req, res) => {
     }
 };
 exports.updateCategories = updateCategories;
+/**
+ * Get context cache status
+ * GET /settings/context-cache
+ */
+const getContextCacheStatus = async (req, res) => {
+    try {
+        const status = contextCache_1.GeminiContextCache.getCacheStatus();
+        res.json({
+            success: true,
+            data: status,
+            error: null
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: `Failed to get context cache status: ${error.message}`
+        });
+    }
+};
+exports.getContextCacheStatus = getContextCacheStatus;
+/**
+ * Refresh context cache
+ * POST /settings/context-cache/refresh
+ */
+const refreshContextCache = async (req, res) => {
+    try {
+        await contextCache_1.GeminiContextCache.refreshAllContexts();
+        res.json({
+            success: true,
+            data: { message: "Context caches refreshed successfully" },
+            error: null
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: `Failed to refresh context caches: ${error.message}`
+        });
+    }
+};
+exports.refreshContextCache = refreshContextCache;
+/**
+ * Clear context cache
+ * DELETE /settings/context-cache
+ */
+const clearContextCache = async (req, res) => {
+    try {
+        contextCache_1.GeminiContextCache.clearCache();
+        res.json({
+            success: true,
+            data: { message: "Context caches cleared successfully" },
+            error: null
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: `Failed to clear context caches: ${error.message}`
+        });
+    }
+};
+exports.clearContextCache = clearContextCache;
+/**
+ * Clear batch context cache
+ * DELETE /settings/context-cache/batch
+ */
+const clearBatchContextCache = async (req, res) => {
+    try {
+        contextCache_1.GeminiContextCache.clearBatchCache();
+        res.json({
+            success: true,
+            data: { message: "Batch context cache cleared successfully" },
+            error: null
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: `Failed to clear batch context cache: ${error.message}`
+        });
+    }
+};
+exports.clearBatchContextCache = clearBatchContextCache;

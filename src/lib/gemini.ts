@@ -1,5 +1,6 @@
 import axios from 'axios';
 import db from './db';
+import { GeminiContextCache } from './contextCache';
 
 interface GeminiAnalysisRequest {
   articles: Array<{
@@ -37,6 +38,7 @@ let categoryCache: { data: any[], timestamp: number } | null = null;
 export function clearPromptCache() {
   promptCache.clear();
   categoryCache = null;
+  GeminiContextCache.clearCache(); // Clear context cache as well
   console.log('✨ Prompt and category cache cleared');
 }
 
@@ -115,18 +117,14 @@ export const analyzeArticles = async (articles: GeminiAnalysisRequest['articles'
   console.log(`📊 Processing ${articles.length} article${articles.length > 1 ? 's' : ''} - this may take 3-5 minutes`);
   console.log(`⏱️  Timeout configured: ${timeoutMs / 1000} seconds`);
 
-  // Load the article analysis prompt from database
-  const systemPrompt = await loadPromptTemplate('article-analysis');
-  
-  // Load category definitions from database
-  const categories = await loadCategoryDefinitions();
+  // Get cached context for article analysis (system prompt + categories)
+  const cachedContent = await GeminiContextCache.getArticleAnalysisContext();
   
   // Create number range for output
   const numberRange = `1-${articles.length}`;
 
-  const userPrompt = `Please analyze these articles:
-
-Articles JSON:
+  // Build the user prompt with articles data
+  const userPrompt = `Articles JSON:
 ${JSON.stringify(articles.map(article => ({
   id: article.id,
   title: article.title,
@@ -137,12 +135,9 @@ ${JSON.stringify(articles.map(article => ({
   text: article.fullBodyText
 })), null, 2)}
 
-Categories JSON:
-${JSON.stringify(categories, null, 2)}
-
 Number Range: ${numberRange}
 
-Return the analysis in the specified JSON format.`;
+RESPOND WITH JSON ONLY - NO EXPLANATIONS OR COMMENTARY`;
 
   try {
     const response = await axios.post(
@@ -152,7 +147,7 @@ Return the analysis in the specified JSON format.`;
           {
             parts: [
               {
-                text: `${systemPrompt}\n\n${userPrompt}`
+                text: `${cachedContent}\n\n${userPrompt}`
               }
             ]
           }
@@ -246,15 +241,14 @@ export const extractQuotes = async (articles: GeminiAnalysisRequest['articles'])
   console.log(`📊 Processing ${articles.length} article${articles.length > 1 ? 's' : ''} for quotes - this may take 3-5 minutes`);
   console.log(`⏱️  Timeout configured: ${timeoutMs / 1000} seconds`);
 
-  // Load the quote analysis prompt from database
-  const systemPrompt = await loadPromptTemplate('quote-analysis');
+  // Get cached context for quote analysis (system prompt)
+  const cachedContent = await GeminiContextCache.getQuoteAnalysisContext();
   
   // Create number range for output
   const numberRange = `1-${articles.length}`;
 
-  const userPrompt = `Please extract quotes from these articles:
-
-Articles JSON:
+  // Build the user prompt with articles data
+  const userPrompt = `Articles JSON:
 ${JSON.stringify(articles.map(article => ({
   id: article.id,
   title: article.title,
@@ -266,7 +260,7 @@ ${JSON.stringify(articles.map(article => ({
 
 Number Range: ${numberRange}
 
-Return the quote extraction in the specified JSON format.`;
+RESPOND WITH JSON ONLY - NO EXPLANATIONS OR COMMENTARY`;
 
   try {
     const response = await axios.post(
@@ -276,7 +270,7 @@ Return the quote extraction in the specified JSON format.`;
           {
             parts: [
               {
-                text: `${systemPrompt}\n\n${userPrompt}`
+                text: `${cachedContent}\n\n${userPrompt}`
               }
             ]
           }

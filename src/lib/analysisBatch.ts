@@ -1,6 +1,7 @@
 import db from './db';
 import { analyzeArticles } from './gemini';
 import { extractQuotes } from './gemini';
+import { GeminiContextCache } from './contextCache';
 
 export interface AnalysisBatchRequest {
   projectId: string;
@@ -76,6 +77,10 @@ export class AnalysisBatchService {
    */
   async startBatch(batchId: string): Promise<AnalysisBatchResult> {
     try {
+      // Initialize batch-level context cache for optimal token usage
+      await GeminiContextCache.initializeBatchContext();
+      console.log(`🚀 Batch context initialized for batch: ${batchId}`);
+
       // Get batch details
       const batch = await db.analysisBatch.findUnique({
         where: { id: batchId },
@@ -201,6 +206,10 @@ export class AnalysisBatchService {
         console.log(`🎉 Batch ${batchId} completed successfully!`);
         console.log(`📊 Processed ${batch.totalArticles} articles with analysis and quotes`);
 
+        // Clear batch cache after completion
+        GeminiContextCache.clearBatchCache();
+        console.log(`🧹 Batch cache cleared for batch: ${batchId}`);
+
         return {
           batchId,
           status: 'completed',
@@ -211,6 +220,10 @@ export class AnalysisBatchService {
 
       } catch (analysisError: any) {
         console.error('Analysis processing error:', analysisError);
+        
+        // Clear batch cache on error
+        GeminiContextCache.clearBatchCache();
+        console.log(`🧹 Batch cache cleared due to error for batch: ${batchId}`);
         
         // Mark batch as failed
         await db.analysisBatch.update({

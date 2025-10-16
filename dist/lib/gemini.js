@@ -7,6 +7,7 @@ exports.testGeminiConnection = exports.extractQuotes = exports.analyzeArticles =
 exports.clearPromptCache = clearPromptCache;
 const axios_1 = __importDefault(require("axios"));
 const db_1 = __importDefault(require("./db"));
+const contextCache_1 = require("./contextCache");
 // Cache configuration
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const promptCache = new Map();
@@ -17,6 +18,7 @@ let categoryCache = null;
 function clearPromptCache() {
     promptCache.clear();
     categoryCache = null;
+    contextCache_1.GeminiContextCache.clearCache(); // Clear context cache as well
     console.log('✨ Prompt and category cache cleared');
 }
 /**
@@ -81,15 +83,12 @@ const analyzeArticles = async (articles) => {
     console.log(`⏳ Starting Gemini article analysis at ${new Date().toISOString()}`);
     console.log(`📊 Processing ${articles.length} article${articles.length > 1 ? 's' : ''} - this may take 3-5 minutes`);
     console.log(`⏱️  Timeout configured: ${timeoutMs / 1000} seconds`);
-    // Load the article analysis prompt from database
-    const systemPrompt = await loadPromptTemplate('article-analysis');
-    // Load category definitions from database
-    const categories = await loadCategoryDefinitions();
+    // Get cached context for article analysis (system prompt + categories)
+    const cachedContent = await contextCache_1.GeminiContextCache.getArticleAnalysisContext();
     // Create number range for output
     const numberRange = `1-${articles.length}`;
-    const userPrompt = `Please analyze these articles:
-
-Articles JSON:
+    // Build the user prompt with articles data
+    const userPrompt = `Articles JSON:
 ${JSON.stringify(articles.map(article => ({
         id: article.id,
         title: article.title,
@@ -100,19 +99,16 @@ ${JSON.stringify(articles.map(article => ({
         text: article.fullBodyText
     })), null, 2)}
 
-Categories JSON:
-${JSON.stringify(categories, null, 2)}
-
 Number Range: ${numberRange}
 
-Return the analysis in the specified JSON format.`;
+RESPOND WITH JSON ONLY - NO EXPLANATIONS OR COMMENTARY`;
     try {
         const response = await axios_1.default.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             contents: [
                 {
                     parts: [
                         {
-                            text: `${systemPrompt}\n\n${userPrompt}`
+                            text: `${cachedContent}\n\n${userPrompt}`
                         }
                     ]
                 }
@@ -191,13 +187,12 @@ const extractQuotes = async (articles) => {
     console.log(`⏳ Starting Gemini quote extraction at ${new Date().toISOString()}`);
     console.log(`📊 Processing ${articles.length} article${articles.length > 1 ? 's' : ''} for quotes - this may take 3-5 minutes`);
     console.log(`⏱️  Timeout configured: ${timeoutMs / 1000} seconds`);
-    // Load the quote analysis prompt from database
-    const systemPrompt = await loadPromptTemplate('quote-analysis');
+    // Get cached context for quote analysis (system prompt)
+    const cachedContent = await contextCache_1.GeminiContextCache.getQuoteAnalysisContext();
     // Create number range for output
     const numberRange = `1-${articles.length}`;
-    const userPrompt = `Please extract quotes from these articles:
-
-Articles JSON:
+    // Build the user prompt with articles data
+    const userPrompt = `Articles JSON:
 ${JSON.stringify(articles.map(article => ({
         id: article.id,
         title: article.title,
@@ -209,14 +204,14 @@ ${JSON.stringify(articles.map(article => ({
 
 Number Range: ${numberRange}
 
-Return the quote extraction in the specified JSON format.`;
+RESPOND WITH JSON ONLY - NO EXPLANATIONS OR COMMENTARY`;
     try {
         const response = await axios_1.default.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             contents: [
                 {
                     parts: [
                         {
-                            text: `${systemPrompt}\n\n${userPrompt}`
+                            text: `${cachedContent}\n\n${userPrompt}`
                         }
                     ]
                 }

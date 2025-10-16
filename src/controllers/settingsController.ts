@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { GeminiContextCache } from "../lib/contextCache";
 
 // TODO: Implement settings storage (could be in database or config files)
 // For now, using placeholder functions
@@ -143,6 +144,86 @@ export const updateCategories = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to update categories"
+    });
+  }
+};
+
+/**
+ * Get context cache status
+ * GET /settings/context-cache
+ */
+export const getContextCacheStatus = async (req: Request, res: Response) => {
+  try {
+    const status = GeminiContextCache.getCacheStatus();
+    res.json({
+      success: true,
+      data: status,
+      error: null
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: `Failed to get context cache status: ${error.message}`
+    });
+  }
+};
+
+/**
+ * Refresh context cache
+ * POST /settings/context-cache/refresh
+ */
+export const refreshContextCache = async (req: Request, res: Response) => {
+  try {
+    await GeminiContextCache.refreshAllContexts();
+    res.json({
+      success: true,
+      data: { message: "Context caches refreshed successfully" },
+      error: null
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: `Failed to refresh context caches: ${error.message}`
+    });
+  }
+};
+
+/**
+ * Clear context cache
+ * DELETE /settings/context-cache
+ */
+export const clearContextCache = async (req: Request, res: Response) => {
+  try {
+    GeminiContextCache.clearCache();
+    res.json({
+      success: true,
+      data: { message: "Context caches cleared successfully" },
+      error: null
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: `Failed to clear context caches: ${error.message}`
+    });
+  }
+};
+
+/**
+ * Clear batch context cache
+ * DELETE /settings/context-cache/batch
+ */
+export const clearBatchContextCache = async (req: Request, res: Response) => {
+  try {
+    GeminiContextCache.clearBatchCache();
+    res.json({
+      success: true,
+      data: { message: "Batch context cache cleared successfully" },
+      error: null
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: `Failed to clear batch context cache: ${error.message}`
     });
   }
 };

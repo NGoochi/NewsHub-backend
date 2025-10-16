@@ -7,6 +7,7 @@ exports.AnalysisBatchService = void 0;
 const db_1 = __importDefault(require("./db"));
 const gemini_1 = require("./gemini");
 const gemini_2 = require("./gemini");
+const contextCache_1 = require("./contextCache");
 class AnalysisBatchService {
     /**
      * Create a new analysis batch
@@ -61,6 +62,9 @@ class AnalysisBatchService {
      */
     async startBatch(batchId) {
         try {
+            // Initialize batch-level context cache for optimal token usage
+            await contextCache_1.GeminiContextCache.initializeBatchContext();
+            console.log(`🚀 Batch context initialized for batch: ${batchId}`);
             // Get batch details
             const batch = await db_1.default.analysisBatch.findUnique({
                 where: { id: batchId },
@@ -168,6 +172,9 @@ class AnalysisBatchService {
                 });
                 console.log(`🎉 Batch ${batchId} completed successfully!`);
                 console.log(`📊 Processed ${batch.totalArticles} articles with analysis and quotes`);
+                // Clear batch cache after completion
+                contextCache_1.GeminiContextCache.clearBatchCache();
+                console.log(`🧹 Batch cache cleared for batch: ${batchId}`);
                 return {
                     batchId,
                     status: 'completed',
@@ -178,6 +185,9 @@ class AnalysisBatchService {
             }
             catch (analysisError) {
                 console.error('Analysis processing error:', analysisError);
+                // Clear batch cache on error
+                contextCache_1.GeminiContextCache.clearBatchCache();
+                console.log(`🧹 Batch cache cleared due to error for batch: ${batchId}`);
                 // Mark batch as failed
                 await db_1.default.analysisBatch.update({
                     where: { id: batchId },

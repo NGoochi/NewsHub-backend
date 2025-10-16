@@ -36,4 +36,24 @@ router.get("/categories", settingsController_1.getCategories);
  * Update category definitions
  */
 router.put("/categories", settingsController_1.updateCategories);
+/**
+ * GET /settings/context-cache
+ * Get context cache status
+ */
+router.get("/context-cache", settingsController_1.getContextCacheStatus);
+/**
+ * POST /settings/context-cache/refresh
+ * Refresh context cache
+ */
+router.post("/context-cache/refresh", settingsController_1.refreshContextCache);
+/**
+ * DELETE /settings/context-cache
+ * Clear context cache
+ */
+router.delete("/context-cache", settingsController_1.clearContextCache);
+/**
+ * DELETE /settings/context-cache/batch
+ * Clear batch context cache
+ */
+router.delete("/context-cache/batch", settingsController_1.clearBatchContextCache);
 exports.default = router;
