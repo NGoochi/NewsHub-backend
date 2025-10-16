@@ -14,6 +14,14 @@ export const previewImport = async (req: Request, res: Response) => {
   try {
     const { projectId, searchTerms, sourceIds, startDate, endDate, useBooleanQuery, booleanQuery, articleLimit } = req.body;
 
+    // Debug logging for articleLimit
+    console.log('Preview Import Request Body:', {
+      projectId,
+      searchTerms,
+      articleLimit,
+      articleLimitType: typeof articleLimit
+    });
+
     // Validate required fields
     const validation = validateRequiredFields(req.body, [
       'projectId', 'searchTerms', 'startDate', 'endDate'
@@ -77,7 +85,7 @@ export const previewImport = async (req: Request, res: Response) => {
       endDate,
       useBooleanQuery: useBooleanQuery || false,
       booleanQuery: booleanQuery || undefined,
-      articleLimit: articleLimit || undefined
+      articleLimit: articleLimit !== undefined ? articleLimit : undefined
     };
 
     // Validate the request
@@ -115,6 +123,14 @@ export const startImport = async (req: Request, res: Response) => {
   try {
     const { projectId, searchTerms, sourceIds, startDate, endDate, useBooleanQuery, booleanQuery, articleLimit } = req.body;
 
+    // Debug logging for articleLimit
+    console.log('Start Import Request Body:', {
+      projectId,
+      searchTerms,
+      articleLimit,
+      articleLimitType: typeof articleLimit
+    });
+
     // Validate required fields
     const validation = validateRequiredFields(req.body, [
       'projectId', 'searchTerms', 'startDate', 'endDate'
@@ -144,7 +160,7 @@ export const startImport = async (req: Request, res: Response) => {
       endDate,
       useBooleanQuery: useBooleanQuery || false,
       booleanQuery: booleanQuery || undefined,
-      articleLimit: articleLimit || undefined
+      articleLimit: articleLimit !== undefined ? articleLimit : undefined
     };
 
     // Validate the request

@@ -16,6 +16,13 @@ const importService = new importService_1.ImportService();
 const previewImport = async (req, res) => {
     try {
         const { projectId, searchTerms, sourceIds, startDate, endDate, useBooleanQuery, booleanQuery, articleLimit } = req.body;
+        // Debug logging for articleLimit
+        console.log('Preview Import Request Body:', {
+            projectId,
+            searchTerms,
+            articleLimit,
+            articleLimitType: typeof articleLimit
+        });
         // Validate required fields
         const validation = (0, validation_1.validateRequiredFields)(req.body, [
             'projectId', 'searchTerms', 'startDate', 'endDate'
@@ -71,7 +78,7 @@ const previewImport = async (req, res) => {
             endDate,
             useBooleanQuery: useBooleanQuery || false,
             booleanQuery: booleanQuery || undefined,
-            articleLimit: articleLimit || undefined
+            articleLimit: articleLimit !== undefined ? articleLimit : undefined
         };
         // Validate the request
         const requestValidation = importService.validateImportRequest(importRequest);
@@ -105,6 +112,13 @@ exports.previewImport = previewImport;
 const startImport = async (req, res) => {
     try {
         const { projectId, searchTerms, sourceIds, startDate, endDate, useBooleanQuery, booleanQuery, articleLimit } = req.body;
+        // Debug logging for articleLimit
+        console.log('Start Import Request Body:', {
+            projectId,
+            searchTerms,
+            articleLimit,
+            articleLimitType: typeof articleLimit
+        });
         // Validate required fields
         const validation = (0, validation_1.validateRequiredFields)(req.body, [
             'projectId', 'searchTerms', 'startDate', 'endDate'
@@ -131,7 +145,7 @@ const startImport = async (req, res) => {
             endDate,
             useBooleanQuery: useBooleanQuery || false,
             booleanQuery: booleanQuery || undefined,
-            articleLimit: articleLimit || undefined
+            articleLimit: articleLimit !== undefined ? articleLimit : undefined
         };
         // Validate the request
         const requestValidation = importService.validateImportRequest(importRequest);

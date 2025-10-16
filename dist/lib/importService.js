@@ -78,6 +78,12 @@ class ImportService {
                 booleanQuery: request.booleanQuery,
                 articleLimit: request.articleLimit
             };
+            console.log('ImportService - Creating ImportSessionConfig:', {
+                projectId: config.projectId,
+                searchTerms: config.searchTerms,
+                articleLimit: config.articleLimit,
+                articleLimitType: typeof config.articleLimit
+            });
             // Start the import session
             const result = await this.sessionManager.startImportSession(config);
             return {

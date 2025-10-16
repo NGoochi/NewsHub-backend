@@ -57,12 +57,25 @@ class ImportSessionManager {
     async processImportSession(sessionId, config) {
         try {
             console.log(`Starting import process for session ${sessionId}`);
+            console.log('ImportSessionConfig:', {
+                projectId: config.projectId,
+                searchTerms: config.searchTerms,
+                articleLimit: config.articleLimit,
+                articleLimitType: typeof config.articleLimit
+            });
             // Create a fresh NewsAPIClient instance for this import session
             const newsapiClient = new newsapi_1.NewsAPIClient();
             // Set custom article limit if provided
-            if (config.articleLimit) {
-                console.log(`Setting article limit to ${config.articleLimit}`);
+            if (config.articleLimit !== undefined && config.articleLimit !== null) {
+                console.log(`Setting article limit to ${config.articleLimit} (type: ${typeof config.articleLimit})`);
                 newsapiClient.setMaxTotalArticles(config.articleLimit);
+                // Verify the limit was set by checking the client's internal state
+                console.log('Article limit set successfully');
+            }
+            else {
+                console.log('No article limit provided, using default 100');
+                console.log('Config articleLimit value:', config.articleLimit);
+                console.log('Config articleLimit type:', typeof config.articleLimit);
             }
             // Build NewsAPI.ai request
             const request = newsapiClient.buildRequest({
