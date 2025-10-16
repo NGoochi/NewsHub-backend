@@ -57,6 +57,11 @@ class ImportSessionManager {
     async processImportSession(sessionId, config) {
         try {
             console.log(`Starting import process for session ${sessionId}`);
+            // Set custom article limit if provided
+            if (config.articleLimit) {
+                console.log(`Setting article limit to ${config.articleLimit}`);
+                this.newsapiClient.setMaxTotalArticles(config.articleLimit);
+            }
             // Build NewsAPI.ai request
             const request = this.newsapiClient.buildRequest({
                 searchTerms: config.searchTerms,

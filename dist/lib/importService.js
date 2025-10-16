@@ -75,7 +75,8 @@ class ImportService {
                 startDate: request.startDate,
                 endDate: request.endDate,
                 useBooleanQuery: request.useBooleanQuery,
-                booleanQuery: request.booleanQuery
+                booleanQuery: request.booleanQuery,
+                articleLimit: request.articleLimit
             };
             // Start the import session
             const result = await this.sessionManager.startImportSession(config);

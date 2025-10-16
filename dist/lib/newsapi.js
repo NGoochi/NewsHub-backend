@@ -18,6 +18,19 @@ class NewsAPIClient {
         this.timeoutMs = parseInt(process.env.NEWSAPI_TIMEOUT_MS || '30000');
     }
     /**
+     * Set custom maximum total articles limit
+     * @param limit Maximum number of articles to fetch
+     */
+    setMaxTotalArticles(limit) {
+        if (limit > 0 && limit <= 1000) {
+            this.maxTotalArticles = limit;
+            console.log(`Set maxTotalArticles to ${limit}`);
+        }
+        else {
+            console.warn(`Invalid article limit ${limit}, using default 100`);
+        }
+    }
+    /**
      * Fetch articles from NewsAPI.ai with pagination
      * Limited to maxTotalArticles (default 100) per search
      */

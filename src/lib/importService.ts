@@ -10,6 +10,7 @@ export interface ImportRequest {
   endDate: string;
   useBooleanQuery?: boolean;
   booleanQuery?: string;
+  articleLimit?: number;
 }
 
 export interface ImportPreview {
@@ -96,7 +97,8 @@ export class ImportService {
         startDate: request.startDate,
         endDate: request.endDate,
         useBooleanQuery: request.useBooleanQuery,
-        booleanQuery: request.booleanQuery
+        booleanQuery: request.booleanQuery,
+        articleLimit: request.articleLimit
       };
 
       // Start the import session

@@ -12,7 +12,7 @@ const importService = new ImportService();
  */
 export const previewImport = async (req: Request, res: Response) => {
   try {
-    const { projectId, searchTerms, sourceIds, startDate, endDate, useBooleanQuery, booleanQuery } = req.body;
+    const { projectId, searchTerms, sourceIds, startDate, endDate, useBooleanQuery, booleanQuery, articleLimit } = req.body;
 
     // Validate required fields
     const validation = validateRequiredFields(req.body, [
@@ -76,7 +76,8 @@ export const previewImport = async (req: Request, res: Response) => {
       startDate,
       endDate,
       useBooleanQuery: useBooleanQuery || false,
-      booleanQuery: booleanQuery || undefined
+      booleanQuery: booleanQuery || undefined,
+      articleLimit: articleLimit || undefined
     };
 
     // Validate the request
@@ -112,7 +113,7 @@ export const previewImport = async (req: Request, res: Response) => {
  */
 export const startImport = async (req: Request, res: Response) => {
   try {
-    const { projectId, searchTerms, sourceIds, startDate, endDate, useBooleanQuery, booleanQuery } = req.body;
+    const { projectId, searchTerms, sourceIds, startDate, endDate, useBooleanQuery, booleanQuery, articleLimit } = req.body;
 
     // Validate required fields
     const validation = validateRequiredFields(req.body, [
@@ -142,7 +143,8 @@ export const startImport = async (req: Request, res: Response) => {
       startDate,
       endDate,
       useBooleanQuery: useBooleanQuery || false,
-      booleanQuery: booleanQuery || undefined
+      booleanQuery: booleanQuery || undefined,
+      articleLimit: articleLimit || undefined
     };
 
     // Validate the request
