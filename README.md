@@ -89,7 +89,11 @@ src/
 - `POST /projects` - Create a new project
 - `GET /projects/:id` - Get project by ID
 - `PUT /projects/:id` - Update project
-- `DELETE /projects/:id` - Delete project
+- `PUT /projects/:id/archive` - Archive a project
+- `PUT /projects/:id/unarchive` - Unarchive a project
+- `POST /projects/bulk-archive` - Bulk archive multiple projects
+- `POST /projects/bulk-unarchive` - Bulk unarchive multiple projects
+- `DELETE /projects/:id` - Delete project (only if archived)
 
 ### Articles
 - `GET /articles` - List all articles

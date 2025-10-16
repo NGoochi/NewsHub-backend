@@ -4,7 +4,11 @@ import {
   getAllProjects,
   getProjectById,
   updateProject,
-  deleteProject
+  deleteProject,
+  archiveProject,
+  unarchiveProject,
+  bulkArchiveProjects,
+  bulkUnarchiveProjects
 } from "../controllers/projectController";
 
 const router = express.Router();
@@ -34,8 +38,32 @@ router.post("/", createProject);
 router.put("/:id", updateProject);
 
 /**
+ * PUT /projects/:id/archive
+ * Archive a project
+ */
+router.put("/:id/archive", archiveProject);
+
+/**
+ * PUT /projects/:id/unarchive
+ * Unarchive a project
+ */
+router.put("/:id/unarchive", unarchiveProject);
+
+/**
+ * POST /projects/bulk-archive
+ * Bulk archive multiple projects
+ */
+router.post("/bulk-archive", bulkArchiveProjects);
+
+/**
+ * POST /projects/bulk-unarchive
+ * Bulk unarchive multiple projects
+ */
+router.post("/bulk-unarchive", bulkUnarchiveProjects);
+
+/**
  * DELETE /projects/:id
- * Delete a project and all associated articles/quotes
+ * Delete a project and all associated articles/quotes (only if archived)
  */
 router.delete("/:id", deleteProject);
 

@@ -126,6 +126,25 @@ export const getArticlesByProject = async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
 
+    // First check if project exists and is not archived
+    const project = await prisma.project.findUnique({
+      where: { id: projectId }
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        error: "Project not found"
+      });
+    }
+
+    if (project.archived) {
+      return res.status(403).json({
+        success: false,
+        error: "Cannot access articles from archived project"
+      });
+    }
+
     const articles = await prisma.article.findMany({
       where: { projectId },
       include: {
@@ -167,6 +186,14 @@ export const getArticleById = async (req: Request, res: Response) => {
       return res.status(404).json({
         success: false,
         error: "Article not found"
+      });
+    }
+
+    // Check if parent project is archived
+    if (article.project.archived) {
+      return res.status(403).json({
+        success: false,
+        error: "Cannot access article from archived project"
       });
     }
 
