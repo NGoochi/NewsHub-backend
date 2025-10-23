@@ -6,8 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
 const errorHandler_1 = require("./utils/errorHandler");
 const auth_1 = require("./middleware/auth");
+// Load environment variables explicitly
+dotenv_1.default.config({ path: path_1.default.resolve(process.cwd(), '.env') });
 // Import route modules
 const auth_2 = __importDefault(require("./routes/auth"));
 const projects_1 = __importDefault(require("./routes/projects"));
@@ -18,7 +21,6 @@ const settings_1 = __importDefault(require("./routes/settings"));
 const export_1 = __importDefault(require("./routes/export"));
 const import_1 = __importDefault(require("./routes/import"));
 const categories_1 = __importDefault(require("./routes/categories"));
-dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 8080;
 // Middleware
@@ -40,16 +42,16 @@ app.get("/", (_, res) => {
     });
 });
 // Auth routes (public)
-app.use("/api/auth", auth_2.default);
+app.use("/auth", auth_2.default);
 // Protected API routes (require authentication)
-app.use("/api/projects", auth_1.authenticateToken, projects_1.default);
-app.use("/api/articles", auth_1.authenticateToken, articles_1.default);
-app.use("/api/quotes", auth_1.authenticateToken, quotes_1.default);
-app.use("/api/analysis", auth_1.authenticateToken, analysis_1.default);
-app.use("/api/settings", auth_1.authenticateToken, settings_1.default);
-app.use("/api/export", auth_1.authenticateToken, export_1.default);
-app.use("/api/import", auth_1.authenticateToken, import_1.default);
-app.use("/api/categories", auth_1.authenticateToken, categories_1.default);
+app.use("/projects", auth_1.authenticateToken, projects_1.default);
+app.use("/articles", auth_1.authenticateToken, articles_1.default);
+app.use("/quotes", auth_1.authenticateToken, quotes_1.default);
+app.use("/analysis", auth_1.authenticateToken, analysis_1.default);
+app.use("/settings", auth_1.authenticateToken, settings_1.default);
+app.use("/export", auth_1.authenticateToken, export_1.default);
+app.use("/import", auth_1.authenticateToken, import_1.default);
+app.use("/categories", auth_1.authenticateToken, categories_1.default);
 // 404 handler
 app.use(errorHandler_1.notFoundHandler);
 // Global error handler
