@@ -7,7 +7,9 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const errorHandler_1 = require("./utils/errorHandler");
+const auth_1 = require("./middleware/auth");
 // Import route modules
+const auth_2 = __importDefault(require("./routes/auth"));
 const projects_1 = __importDefault(require("./routes/projects"));
 const articles_1 = __importDefault(require("./routes/articles"));
 const quotes_1 = __importDefault(require("./routes/quotes"));
@@ -25,7 +27,7 @@ app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true }));
 // Serve static files
 app.use(express_1.default.static('public'));
-// Health check endpoint
+// Health check endpoint (public)
 app.get("/", (_, res) => {
     res.json({
         success: true,
@@ -37,15 +39,17 @@ app.get("/", (_, res) => {
         error: null
     });
 });
-// API routes
-app.use("/projects", projects_1.default);
-app.use("/articles", articles_1.default);
-app.use("/quotes", quotes_1.default);
-app.use("/analysis", analysis_1.default);
-app.use("/settings", settings_1.default);
-app.use("/export", export_1.default);
-app.use("/import", import_1.default);
-app.use("/categories", categories_1.default);
+// Auth routes (public)
+app.use("/api/auth", auth_2.default);
+// Protected API routes (require authentication)
+app.use("/api/projects", auth_1.authenticateToken, projects_1.default);
+app.use("/api/articles", auth_1.authenticateToken, articles_1.default);
+app.use("/api/quotes", auth_1.authenticateToken, quotes_1.default);
+app.use("/api/analysis", auth_1.authenticateToken, analysis_1.default);
+app.use("/api/settings", auth_1.authenticateToken, settings_1.default);
+app.use("/api/export", auth_1.authenticateToken, export_1.default);
+app.use("/api/import", auth_1.authenticateToken, import_1.default);
+app.use("/api/categories", auth_1.authenticateToken, categories_1.default);
 // 404 handler
 app.use(errorHandler_1.notFoundHandler);
 // Global error handler

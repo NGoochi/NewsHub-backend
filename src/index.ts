@@ -1,9 +1,15 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 import { globalErrorHandler, notFoundHandler } from "./utils/errorHandler";
+import { authenticateToken } from "./middleware/auth";
+
+// Load environment variables explicitly
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 // Import route modules
+import authRouter from "./routes/auth";
 import projectsRouter from "./routes/projects";
 import articlesRouter from "./routes/articles";
 import quotesRouter from "./routes/quotes";
@@ -12,8 +18,6 @@ import settingsRouter from "./routes/settings";
 import exportRouter from "./routes/export";
 import importRouter from "./routes/import";
 import categoriesRouter from "./routes/categories";
-
-dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -25,7 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files
 app.use(express.static('public'));
 
-// Health check endpoint
+// Health check endpoint (public)
 app.get("/", (_, res) => {
   res.json({
     success: true,
@@ -38,15 +42,18 @@ app.get("/", (_, res) => {
   });
 });
 
-// API routes
-app.use("/projects", projectsRouter);
-app.use("/articles", articlesRouter);
-app.use("/quotes", quotesRouter);
-app.use("/analysis", analysisRouter);
-app.use("/settings", settingsRouter);
-app.use("/export", exportRouter);
-app.use("/import", importRouter);
-app.use("/categories", categoriesRouter);
+// Auth routes (public)
+app.use("/auth", authRouter);
+
+// Protected API routes (require authentication)
+app.use("/projects", authenticateToken, projectsRouter);
+app.use("/articles", authenticateToken, articlesRouter);
+app.use("/quotes", authenticateToken, quotesRouter);
+app.use("/analysis", authenticateToken, analysisRouter);
+app.use("/settings", authenticateToken, settingsRouter);
+app.use("/export", authenticateToken, exportRouter);
+app.use("/import", authenticateToken, importRouter);
+app.use("/categories", authenticateToken, categoriesRouter);
 
 // 404 handler
 app.use(notFoundHandler);
