@@ -94,15 +94,25 @@ export class ImportSessionManager {
 
       // Set custom article limit if provided
       if (config.articleLimit !== undefined && config.articleLimit !== null) {
-        console.log(`Setting article limit to ${config.articleLimit} (type: ${typeof config.articleLimit})`);
-        newsapiClient.setMaxTotalArticles(config.articleLimit);
+        console.log(`[ImportSession] Setting article limit:`, {
+          value: config.articleLimit,
+          type: typeof config.articleLimit,
+          isNumber: typeof config.articleLimit === 'number'
+        });
         
-        // Verify the limit was set by checking the client's internal state
-        console.log('Article limit set successfully');
+        // Ensure it's a number
+        const numericLimit = typeof config.articleLimit === 'string' 
+          ? parseInt(config.articleLimit, 10) 
+          : config.articleLimit;
+        
+        if (!isNaN(numericLimit) && numericLimit > 0) {
+          newsapiClient.setMaxTotalArticles(numericLimit);
+          console.log(`✓ Article limit set to ${numericLimit}`);
+        } else {
+          console.warn(`✗ Could not parse article limit: ${config.articleLimit}`);
+        }
       } else {
-        console.log('No article limit provided, using default 100');
-        console.log('Config articleLimit value:', config.articleLimit);
-        console.log('Config articleLimit type:', typeof config.articleLimit);
+        console.log('[ImportSession] No article limit provided, using default 100');
       }
 
       // Build NewsAPI.ai request

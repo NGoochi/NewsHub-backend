@@ -85,7 +85,9 @@ export const previewImport = async (req: Request, res: Response) => {
       endDate,
       useBooleanQuery: useBooleanQuery || false,
       booleanQuery: booleanQuery || undefined,
-      articleLimit: articleLimit !== undefined ? articleLimit : undefined
+      articleLimit: articleLimit !== undefined && articleLimit !== null 
+        ? parseInt(String(articleLimit), 10) 
+        : undefined
     };
 
     // Validate the request
@@ -160,7 +162,9 @@ export const startImport = async (req: Request, res: Response) => {
       endDate,
       useBooleanQuery: useBooleanQuery || false,
       booleanQuery: booleanQuery || undefined,
-      articleLimit: articleLimit !== undefined ? articleLimit : undefined
+      articleLimit: articleLimit !== undefined && articleLimit !== null 
+        ? parseInt(String(articleLimit), 10) 
+        : undefined
     };
 
     // Validate the request
@@ -411,7 +415,7 @@ export const getAvailableLanguages = async (req: Request, res: Response) => {
  */
 export const importNewsAPI = async (req: Request, res: Response) => {
   try {
-    const { projectId, query } = req.body;
+    const { projectId, query, articleCount } = req.body;
     
     // Validate inputs
     if (!projectId) {
@@ -458,6 +462,7 @@ export const importNewsAPI = async (req: Request, res: Response) => {
     console.log('- Search terms extracted:', searchTerms);
     console.log('- Sources extracted:', sourceIds);
     console.log('- Date range:', startDate, 'to', endDate);
+    console.log('- Article count:', articleCount, '(type:', typeof articleCount, ')');
     
     // Use existing ImportService to handle the import
     // Pass the entire query structure as the boolean query
@@ -468,7 +473,10 @@ export const importNewsAPI = async (req: Request, res: Response) => {
       startDate,
       endDate,
       useBooleanQuery: true,
-      booleanQuery: JSON.stringify(query) // Pass the entire query object
+      booleanQuery: JSON.stringify(query), // Pass the entire query object
+      articleLimit: articleCount !== undefined && articleCount !== null 
+        ? parseInt(String(articleCount), 10) 
+        : undefined
     };
     
     // Start import using existing service

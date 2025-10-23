@@ -125,11 +125,21 @@ export class NewsAPIClient {
    * @param limit Maximum number of articles to fetch
    */
   setMaxTotalArticles(limit: number): void {
+    console.log(`[setMaxTotalArticles] Called with:`, {
+      value: limit,
+      type: typeof limit,
+      isNumber: typeof limit === 'number',
+      isValid: limit > 0 && limit <= 1000
+    });
+    
     if (limit > 0 && limit <= 1000) {
       this.maxTotalArticles = limit;
-      console.log(`Set maxTotalArticles to ${limit}`);
+      console.log(`✓ Set maxTotalArticles to ${limit}`);
+    } else if (limit > 1000) {
+      this.maxTotalArticles = 1000;
+      console.warn(`⚠ Article limit ${limit} exceeds maximum of 1000. Capped at 1000.`);
     } else {
-      console.warn(`Invalid article limit ${limit}, using default 100`);
+      console.warn(`✗ Invalid article limit ${limit} (type: ${typeof limit}), using default 100`);
     }
   }
 
@@ -145,14 +155,35 @@ export class NewsAPIClient {
     console.log(`Maximum total articles limit: ${this.maxTotalArticles}`);
 
     while (hasMorePages) {
+      // Calculate how many articles we still need
+      const articlesAlreadyFetched = allArticles.length;
+      const articlesRemaining = this.maxTotalArticles - articlesAlreadyFetched;
+
+      // Request up to 100 articles, or fewer if that's all we need
+      const articlesCountForThisPage = Math.min(100, articlesRemaining);
+
+      console.log(`[fetchArticles] Page ${currentPage}: Need ${articlesRemaining} more articles, requesting ${articlesCountForThisPage}`);
+
       const request = {
         ...requestBody,
         articlesPage: currentPage,
-        articlesCount: this.articlesPerPage,
+        articlesCount: articlesCountForThisPage,  // ✓ Dynamic: max 100 per request
         apiKey: process.env.NEWSAPI_API_KEY || ''
       };
 
       console.log(`Fetching page ${currentPage}...`);
+      
+      // TEMPORARY DEBUG: Log the complete request details
+      console.log('=== NEWSAPI REQUEST DEBUG ===');
+      console.log('URL:', this.apiUrl);
+      console.log('articlesCount:', request.articlesCount, `(requesting ${articlesCountForThisPage} of ${this.maxTotalArticles} total)`);
+      console.log('articlesPage:', request.articlesPage);
+      console.log('Request Body:', JSON.stringify(request, null, 2));
+      console.log('Headers:', {
+        'Content-Type': 'application/json',
+      });
+      console.log('Timeout:', this.timeoutMs);
+      console.log('=== END NEWSAPI REQUEST DEBUG ===');
 
       try {
         const response = await axios.post(this.apiUrl, request, {
@@ -164,6 +195,13 @@ export class NewsAPIClient {
 
         const data: NewsAPIResponse = response.data;
         const articles = data.articles?.results || [];
+
+        // TEMPORARY DEBUG: Log the response details
+        console.log('=== NEWSAPI RESPONSE DEBUG ===');
+        console.log('Response Status:', response.status);
+        console.log('Articles Returned:', articles.length);
+        console.log('Total Results Available:', data.articles?.totalResults);
+        console.log('=== END NEWSAPI RESPONSE DEBUG ===');
 
         allArticles.push(...articles);
 
@@ -186,6 +224,17 @@ export class NewsAPIClient {
         }
       } catch (error: any) {
         console.error(`Error fetching page ${currentPage}:`, error);
+        
+        // TEMPORARY DEBUG: Log detailed error information
+        console.log('=== NEWSAPI ERROR DEBUG ===');
+        console.log('Error Message:', error.message);
+        console.log('Error Code:', error.code);
+        console.log('Error Response Status:', error.response?.status);
+        console.log('Error Response Headers:', error.response?.headers);
+        console.log('Error Response Data:', error.response?.data);
+        console.log('Request that failed:', JSON.stringify(request, null, 2));
+        console.log('=== END NEWSAPI ERROR DEBUG ===');
+        
         throw error;
       }
     }

@@ -4,10 +4,13 @@ A server-based application that retrieves, analyses, and organises news articles
 
 ## Features
 
-- **Search**: Retrieve and catalogue news articles via NewsAPI
+- **Search**: Retrieve and catalogue news articles via NewsAPI with dynamic pagination
 - **Analysis**: Run AI-powered analysis through Gemini to extract summaries, sentiment, categories, and quotes
 - **Export**: Output analysed datasets to Google Sheets for further study
 - **Project Management**: Organize articles into projects for focused analysis
+- **PDF Import**: Extract articles from Factiva PDF files
+- **Manual Import**: Add articles manually with full metadata
+- **Smart Pagination**: Automatically handles NewsAPI's 100-article-per-request limit
 
 ## Tech Stack
 
@@ -118,7 +121,7 @@ src/
 ### Import
 - `POST /import/preview` - Preview import from NewsAPI
 - `POST /import/start` - Start import session
-- `POST /import/newsapi` - Import articles from NewsAPI
+- `POST /import/newsapi` - Import articles from NewsAPI with dynamic pagination
 - `POST /import/pdf` - Import articles from PDF upload
 - `POST /import/manual` - Import articles manually
 - `GET /import/session/:sessionId` - Get import session status
@@ -211,6 +214,27 @@ The application uses the following models:
 - **ImportSession**: Import session tracking and management
 - **PromptTemplate**: Gemini prompt templates for analysis
 - **Category**: Category definitions for article classification
+
+## NewsAPI Integration Improvements
+
+NewsHub features advanced NewsAPI integration with intelligent pagination and comprehensive debugging:
+
+### Dynamic Pagination
+- **Smart Request Sizing**: Automatically respects NewsAPI's 100-article-per-request limit
+- **Efficient Fetching**: For requests > 100 articles, uses multiple requests with optimal sizing
+- **User-Friendly**: Frontend can request any number of articles (up to 1000), backend handles pagination
+
+### Enhanced Debugging
+- **Request Logging**: Detailed logs show `articlesCount` and `articlesPage` for each request
+- **Type Validation**: Comprehensive logging of parameter types and validation results
+- **Error Tracking**: Enhanced error messages with request context for easier troubleshooting
+
+### Examples:
+```
+User requests 20 articles: 1 request, articlesCount: 20
+User requests 230 articles: 3 requests, articlesCount: 100, 100, 30
+User requests 500 articles: 5 requests, articlesCount: 100 each
+```
 
 ## Context Caching
 
